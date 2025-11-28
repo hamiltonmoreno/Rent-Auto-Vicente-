@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -11,8 +12,8 @@ import { Pagination } from './components/Pagination';
 import { TourPackages } from './components/TourPackages'; 
 import { TourBookingModal } from './components/TourBookingModal';
 import { NotificationProvider } from './components/NotificationSystem'; // Import Provider
-import { Vehicle, Language, User, Reservation, ReservationStatus, Review, Expense, Tour } from './types';
-import { TRANSLATIONS, MOCK_VEHICLES, MOCK_RESERVATIONS, MOCK_REVIEWS, MOCK_EXPENSES, MOCK_TOURS } from './constants';
+import { Vehicle, Language, User, Reservation, ReservationStatus, Review, Expense, Tour, CategoryItem } from './types';
+import { TRANSLATIONS, MOCK_VEHICLES, MOCK_RESERVATIONS, MOCK_REVIEWS, MOCK_EXPENSES, MOCK_TOURS, DEFAULT_VEHICLE_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES } from './constants';
 import { StarRating } from './components/StarRating';
 
 const ITEMS_PER_PAGE = 6;
@@ -67,6 +68,17 @@ function AppContent() { // Extracted inner component to use Notification Hook if
     return saved ? JSON.parse(saved) : MOCK_TOURS;
   });
 
+  // Category State
+  const [vehicleCategories, setVehicleCategories] = useState<CategoryItem[]>(() => {
+    const saved = localStorage.getItem('av_cats_vehicles');
+    return saved ? JSON.parse(saved) : DEFAULT_VEHICLE_CATEGORIES;
+  });
+
+  const [expenseCategories, setExpenseCategories] = useState<CategoryItem[]>(() => {
+    const saved = localStorage.getItem('av_cats_expenses');
+    return saved ? JSON.parse(saved) : DEFAULT_EXPENSE_CATEGORIES;
+  });
+
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('av_vehicles', JSON.stringify(vehicles));
@@ -87,6 +99,14 @@ function AppContent() { // Extracted inner component to use Notification Hook if
   useEffect(() => {
     localStorage.setItem('av_tours', JSON.stringify(tours));
   }, [tours]);
+
+  useEffect(() => {
+    localStorage.setItem('av_cats_vehicles', JSON.stringify(vehicleCategories));
+  }, [vehicleCategories]);
+
+  useEffect(() => {
+    localStorage.setItem('av_cats_expenses', JSON.stringify(expenseCategories));
+  }, [expenseCategories]);
 
   // Reset pagination when category changes
   useEffect(() => {
@@ -245,7 +265,6 @@ function AppContent() { // Extracted inner component to use Notification Hook if
   };
 
   const handleUpdateReservationStatus = (id: string, status: ReservationStatus) => {
-    // 1. Update the Reservation Status
     setReservations(prevReservations => {
         return prevReservations.map(r => {
             if (r.id !== id) return r;
@@ -253,9 +272,13 @@ function AppContent() { // Extracted inner component to use Notification Hook if
             // Logic for "Check-out" (Active) - Calculating remaining payment
             if (status === 'active' && r.paymentStatus === 'paid' && r.paidAmount && r.paidAmount < r.total) {
                 // If moving to active, assume customer pays the rest at counter
-                const remaining = r.total - r.paidAmount;
-                // We could trigger a "Payment Received" expense log here or update paidAmount
                 return { ...r, status, paidAmount: r.total }; // Mark fully paid
+            }
+
+            // Logic for Cancellation and Refunds
+            if (status === 'cancelled' && r.paymentStatus === 'paid') {
+               // Mark as refunded to keep accounting clean
+               return { ...r, status, paymentStatus: 'refunded' };
             }
 
             return { ...r, status };
@@ -316,6 +339,23 @@ function AppContent() { // Extracted inner component to use Notification Hook if
     setTours(tours.filter(t => t.id !== id));
   };
 
+  // Category Handlers
+  const handleAddCategory = (cat: CategoryItem) => {
+    if (cat.type === 'vehicle') {
+        setVehicleCategories([...vehicleCategories, cat]);
+    } else {
+        setExpenseCategories([...expenseCategories, cat]);
+    }
+  };
+
+  const handleDeleteCategory = (id: string, type: 'vehicle' | 'expense') => {
+    if (type === 'vehicle') {
+        setVehicleCategories(vehicleCategories.filter(c => c.id !== id));
+    } else {
+        setExpenseCategories(expenseCategories.filter(c => c.id !== id));
+    }
+  };
+
   const renderContent = () => {
     if (view === 'admin' && user?.role === 'admin') {
       return (
@@ -326,6 +366,8 @@ function AppContent() { // Extracted inner component to use Notification Hook if
           reviews={reviews}
           expenses={expenses}
           tours={tours}
+          vehicleCategories={vehicleCategories}
+          expenseCategories={expenseCategories}
           onUpdateVehicle={handleUpdateVehicle}
           onAddVehicle={handleAddVehicle}
           onDeleteVehicle={handleDeleteVehicle}
@@ -336,6 +378,8 @@ function AppContent() { // Extracted inner component to use Notification Hook if
           onAddTour={handleAddTour}
           onUpdateTour={handleUpdateTour}
           onDeleteTour={handleDeleteTour}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
         />
       );
     }
@@ -372,19 +416,33 @@ function AppContent() { // Extracted inner component to use Notification Hook if
             <h2 className="text-3xl font-bold text-slate-900">{t.nav.fleet}</h2>
             
             <div className="flex flex-wrap gap-2">
-              {['all', 'economy', 'suv', 'luxury', 'van'].map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
+              <button
+                  onClick={() => setSelectedCategory('all')}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    selectedCategory === cat 
+                    selectedCategory === 'all' 
                       ? 'bg-slate-900 text-white' 
                       : 'bg-white text-slate-600 shadow-sm hover:bg-slate-50'
                   }`}
                 >
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </button>
-              ))}
+                  {t.filters.all}
+              </button>
+              {vehicleCategories.map(cat => {
+                 // Try to find translation or use name
+                 const label = t.filters[cat.id as keyof typeof t.filters] || cat.name;
+                 return (
+                    <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                            selectedCategory === cat.id
+                            ? 'bg-slate-900 text-white' 
+                            : 'bg-white text-slate-600 shadow-sm hover:bg-slate-50'
+                        }`}
+                    >
+                        {label}
+                    </button>
+                 );
+              })}
             </div>
           </div>
 

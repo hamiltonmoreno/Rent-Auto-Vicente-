@@ -1,6 +1,6 @@
 
 
-import { Translation, Vehicle, Reservation, Review, Expense, Tour } from './types';
+import { Translation, Vehicle, Reservation, Review, Expense, Tour, CategoryItem } from './types';
 
 // Placeholder logo that matches the described Red/Silver circular design. 
 // Replace this URL with the actual URL of your hosted image.
@@ -12,6 +12,22 @@ export const EXTRAS_PRICING = {
   insurance: 2500,
   delivery: 2000,
 };
+
+export const DEFAULT_VEHICLE_CATEGORIES: CategoryItem[] = [
+  { id: 'economy', name: 'Economy', type: 'vehicle' },
+  { id: 'suv', name: 'SUV', type: 'vehicle' },
+  { id: 'luxury', name: 'Luxury', type: 'vehicle' },
+  { id: 'van', name: 'Van', type: 'vehicle' }
+];
+
+export const DEFAULT_EXPENSE_CATEGORIES: CategoryItem[] = [
+  { id: 'maintenance', name: 'Maintenance', type: 'expense' },
+  { id: 'repair_shop', name: 'Oficina', type: 'expense' },
+  { id: 'fuel', name: 'Fuel', type: 'expense' },
+  { id: 'office', name: 'Office', type: 'expense' },
+  { id: 'marketing', name: 'Marketing', type: 'expense' },
+  { id: 'other', name: 'Other', type: 'expense' }
+];
 
 export const TRANSLATIONS: Record<string, Translation> = {
   pt: {
@@ -59,6 +75,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
       step_payment: 'Pagamento',
       total: 'Total',
       discount_applied: 'Desconto (>7 dias)',
+      seasonal_adjust: 'Ajuste de Temporada',
       pay_now: 'A pagar agora (Depósito)',
       pay_later: 'A pagar ao balcão',
       delivery_opt: 'Receber em casa (+2000 CVE)',
@@ -199,6 +216,12 @@ export const TRANSLATIONS: Record<string, Translation> = {
       settings_general: 'Dados da Empresa',
       settings_integrations: 'Integrações',
       settings_payments: 'Pagamentos',
+      settings_categories: 'Categorias',
+      cat_vehicle: 'Categorias de Veículos',
+      cat_expense: 'Categorias de Despesas',
+      cat_add: 'Nova Categoria',
+      cat_name: 'Nome da Categoria',
+      cat_add_btn: 'Adicionar',
       comp_name: 'Nome da Empresa',
       comp_email: 'Email de Contato',
       comp_phone: 'Telefone',
@@ -231,6 +254,17 @@ export const TRANSLATIONS: Record<string, Translation> = {
       rep_filter_type: 'Tipo de Transação',
       rep_filter_clear: 'Limpar Filtros',
       rep_filter_apply: 'Aplicar',
+      rep_quick_7days: 'Últimos 7 dias',
+      rep_quick_month: 'Este Mês',
+      // Enhanced Overview
+      ov_today_pickups: 'Levantamentos Hoje',
+      ov_today_returns: 'Devoluções Hoje',
+      ov_occupancy_rate: 'Ocupação Atual',
+      ov_fleet_health: 'Saúde da Frota',
+      ov_action_needed: 'Atenção Necessária',
+      ov_revenue_trend: 'Tendência de Receita',
+      ov_growth_mom: 'Cresc. Mensal',
+      ov_pending_actions: 'Ações Pendentes',
     },
     customer: {
       dashboard: 'Minhas Reservas',
@@ -318,6 +352,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
       step_payment: 'Payment',
       total: 'Total Amount',
       discount_applied: 'Discount (>7 days)',
+      seasonal_adjust: 'Seasonal Adjustment',
       pay_now: 'Pay Now (Deposit)',
       pay_later: 'Pay at Counter',
       delivery_opt: 'Deliver to location (+2000 CVE)',
@@ -458,6 +493,12 @@ export const TRANSLATIONS: Record<string, Translation> = {
       settings_general: 'Company Details',
       settings_integrations: 'Integrations',
       settings_payments: 'Payments',
+      settings_categories: 'Categories',
+      cat_vehicle: 'Vehicle Categories',
+      cat_expense: 'Expense Categories',
+      cat_add: 'New Category',
+      cat_name: 'Category Name',
+      cat_add_btn: 'Add',
       comp_name: 'Company Name',
       comp_email: 'Contact Email',
       comp_phone: 'Phone Number',
@@ -490,6 +531,17 @@ export const TRANSLATIONS: Record<string, Translation> = {
       rep_filter_type: 'Transaction Type',
       rep_filter_clear: 'Clear Filters',
       rep_filter_apply: 'Apply',
+      rep_quick_7days: 'Last 7 Days',
+      rep_quick_month: 'This Month',
+      // Enhanced Overview
+      ov_today_pickups: 'Pickups Today',
+      ov_today_returns: 'Returns Today',
+      ov_occupancy_rate: 'Current Occupancy',
+      ov_fleet_health: 'Fleet Health',
+      ov_action_needed: 'Action Needed',
+      ov_revenue_trend: 'Revenue Trend',
+      ov_growth_mom: 'MoM Growth',
+      ov_pending_actions: 'Pending Actions',
     },
     customer: {
       dashboard: 'My Reservations',

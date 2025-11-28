@@ -11,12 +11,18 @@ export interface User {
   avatar?: string;
 }
 
+export interface CategoryItem {
+  id: string;
+  name: string;
+  type: 'vehicle' | 'expense';
+}
+
 export interface Vehicle {
   id: string;
   make: string;
   model: string;
   year: number;
-  category: 'economy' | 'suv' | 'luxury' | 'van';
+  category: string; // Changed from strict union to string to allow dynamic categories
   transmission: 'manual' | 'automatic';
   seats: number;
   pricePerDay: number;
@@ -77,7 +83,7 @@ export interface Expense {
   id: string;
   description: string;
   amount: number;
-  category: 'maintenance' | 'fuel' | 'office' | 'marketing' | 'other';
+  category: string; // Changed from strict union to string
   date: string;
 }
 
@@ -135,7 +141,8 @@ export interface Translation {
     step_docs: string;
     step_payment: string;
     total: string;
-    discount_applied: string; 
+    discount_applied: string;
+    seasonal_adjust: string; 
     pay_now: string;
     pay_later: string;
     delivery_opt: string;
@@ -275,6 +282,12 @@ export interface Translation {
     settings_general: string;
     settings_integrations: string;
     settings_payments: string;
+    settings_categories: string;
+    cat_vehicle: string;
+    cat_expense: string;
+    cat_add: string;
+    cat_name: string;
+    cat_add_btn: string;
     comp_name: string;
     comp_email: string;
     comp_phone: string;
@@ -305,6 +318,17 @@ export interface Translation {
     rep_filter_type: string;
     rep_filter_clear: string;
     rep_filter_apply: string;
+    rep_quick_7days: string;
+    rep_quick_month: string;
+    // Enhanced Overview
+    ov_today_pickups: string;
+    ov_today_returns: string;
+    ov_occupancy_rate: string;
+    ov_fleet_health: string;
+    ov_action_needed: string;
+    ov_revenue_trend: string;
+    ov_growth_mom: string;
+    ov_pending_actions: string;
   };
   customer: {
     dashboard: string;
