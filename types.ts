@@ -6,6 +6,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: 'admin' | 'customer' | 'staff';
   avatar?: string;
 }
@@ -39,20 +40,23 @@ export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
 
 export interface Reservation {
   id: string;
-  vehicleId: string;
+  vehicleId?: string; // Optional for tours
+  tourId?: string;    // New for tours
+  type?: 'vehicle' | 'tour'; // Distinguish types
   userId: string;
   customerName: string;
   startDate: string;
-  endDate: string;
+  endDate: string; // Same as startDate for single-day tours
   status: ReservationStatus;
   total: number;
-  discount?: number; // New field for progressive discounts
-  pickupType: 'office' | 'delivery';
-  pickupLocation?: string; // e.g., 'airport', 'city_center', 'port'
-  pickupAddress?: string; // for custom delivery
+  discount?: number;
+  paidAmount?: number;
+  pickupType?: 'office' | 'delivery';
+  pickupLocation?: string; 
+  pickupAddress?: string; 
   flightNumber?: string;
   numberOfPassengers?: number;
-  extras: ReservationExtras;
+  extras?: ReservationExtras;
   paymentMethod?: PaymentMethod;
   paymentStatus?: PaymentStatus;
   transactionId?: string;
@@ -77,10 +81,21 @@ export interface Expense {
   date: string;
 }
 
+export interface Tour {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  duration: string;
+  price: number;
+  features: string[];
+}
+
 export interface Translation {
   nav: {
     home: string;
     fleet: string;
+    tours: string;
     admin: string;
     login: string;
     logout: string;
@@ -103,6 +118,7 @@ export interface Translation {
     luxury: string;
     automatic: string;
     manual: string;
+    van: string;
   };
   vehicle: {
     day: string;
@@ -119,14 +135,14 @@ export interface Translation {
     step_docs: string;
     step_payment: string;
     total: string;
-    discount_applied: string; // New
+    discount_applied: string; 
     pay_now: string;
     pay_later: string;
     delivery_opt: string;
     delivery_placeholder: string;
     upload_id: string;
     upload_license: string;
-    upload_success: string; // New
+    upload_success: string; 
     confirm_pay: string;
     payment_method: string;
     pay_vinti4: string;
@@ -148,7 +164,6 @@ export interface Translation {
     extra_child_seat: string;
     extra_insurance: string;
     error_dates_invalid: string;
-    // New fields
     about_company_title: string;
     about_company_desc: string;
     useful_info_title: string;
@@ -176,6 +191,26 @@ export interface Translation {
     stripe_instr: string;
     paypal_instr: string;
   };
+  tour_booking: {
+    title: string;
+    select_date: string;
+    guests: string;
+    total_price: string;
+    confirm_purchase: string;
+    success_title: string;
+    success_msg: string;
+    email_sent: string;
+    download_ticket: string;
+  };
+  tours: {
+    title: string;
+    subtitle: string;
+    book_tour: string;
+    duration: string;
+    included: string;
+    view_details: string;
+    buy_now: string;
+  };
   admin: {
     dashboard: string;
     revenue: string;
@@ -192,10 +227,13 @@ export interface Translation {
     tabs_deliveries: string;
     tabs_reviews: string;
     tabs_settings: string;
-    tabs_finance: string; // New
+    tabs_finance: string; 
+    tabs_tours: string; 
+    tabs_reports: string;
     filter_pending: string;
     filter_all: string;
     add_vehicle: string;
+    add_tour: string;
     edit: string;
     delete: string;
     plate: string;
@@ -223,7 +261,6 @@ export interface Translation {
     payment_status: string;
     paid: string;
     pending_payment: string;
-    // Finance specific
     fin_total_income: string;
     fin_total_expenses: string;
     fin_net_profit: string;
@@ -235,6 +272,39 @@ export interface Translation {
     fin_recent_transactions: string;
     fin_type_income: string;
     fin_type_expense: string;
+    settings_general: string;
+    settings_integrations: string;
+    settings_payments: string;
+    comp_name: string;
+    comp_email: string;
+    comp_phone: string;
+    comp_address: string;
+    tour_title: string;
+    tour_price: string;
+    tour_features: string;
+    tour_features_help: string;
+    rep_occupancy: string;
+    rep_avg_ticket: string;
+    rep_rev_by_cat: string;
+    rep_monthly_growth: string;
+    rep_export_csv: string;
+    rep_export_pdf: string;
+    rep_statement: string;
+    rep_avg_duration: string;
+    rep_days_rented: string;
+    rep_status_dist: string;
+    rep_vehicle_perf: string;
+    rep_top_vehicles: string;
+    rep_perf_days: string;
+    rep_perf_revenue: string;
+    // Filters
+    rep_filter_date_start: string;
+    rep_filter_date_end: string;
+    rep_filter_vehicle: string;
+    rep_filter_category: string;
+    rep_filter_type: string;
+    rep_filter_clear: string;
+    rep_filter_apply: string;
   };
   customer: {
     dashboard: string;
@@ -243,6 +313,13 @@ export interface Translation {
     review_submitted: string;
     download_contract: string;
     cancel_booking: string;
+    confirm_cancel: string; 
+    tabs_reservations: string;
+    tabs_profile: string;
+    profile_settings: string;
+    personal_details: string;
+    save_changes: string;
+    profile_updated: string;
   };
   auth: {
     login_title: string;
@@ -263,4 +340,10 @@ export interface Translation {
     privacy: string;
     terms: string;
   };
+  pagination: {
+    prev: string;
+    next: string;
+    page: string;
+    of: string;
+  }
 }

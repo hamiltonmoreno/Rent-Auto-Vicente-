@@ -1,12 +1,4 @@
 
-
-
-
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -15,18 +7,39 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { CustomerDashboard } from './components/CustomerDashboard';
 import { LoginModal } from './components/LoginModal';
 import { Footer } from './components/Footer';
-import { Vehicle, Language, User, Reservation, ReservationStatus, Review, Expense } from './types';
-import { TRANSLATIONS, MOCK_VEHICLES, MOCK_RESERVATIONS, MOCK_REVIEWS, MOCK_EXPENSES } from './constants';
+import { Pagination } from './components/Pagination';
+import { TourPackages } from './components/TourPackages'; 
+import { TourBookingModal } from './components/TourBookingModal';
+import { NotificationProvider } from './components/NotificationSystem'; // Import Provider
+import { Vehicle, Language, User, Reservation, ReservationStatus, Review, Expense, Tour } from './types';
+import { TRANSLATIONS, MOCK_VEHICLES, MOCK_RESERVATIONS, MOCK_REVIEWS, MOCK_EXPENSES, MOCK_TOURS } from './constants';
 import { StarRating } from './components/StarRating';
 
-function App() {
+const ITEMS_PER_PAGE = 6;
+// Business Logic Configuration
+const MAINTENANCE_BUFFER_DAYS = 1; // Days required between rentals for cleaning
+const TRANSACTION_FEES = {
+  vinti4: 0.015, // 1.5%
+  card: 0.025,   // 2.5%
+  stripe: 0.029, // 2.9%
+  paypal: 0.034, // 3.4%
+  cash: 0
+};
+
+function AppContent() { // Extracted inner component to use Notification Hook if needed in App level later
   const [lang, setLang] = useState<Language>('pt');
   const [view, setView] = useState<'home' | 'admin' | 'customer'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedTourForBooking, setSelectedTourForBooking] = useState<Tour | null>(null);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTourModalOpen, setIsTourModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+
+  // Pagination State for Fleet
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Central Data State with Persistence
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
@@ -49,6 +62,11 @@ function App() {
     return saved ? JSON.parse(saved) : MOCK_EXPENSES;
   });
 
+  const [tours, setTours] = useState<Tour[]>(() => {
+    const saved = localStorage.getItem('av_tours');
+    return saved ? JSON.parse(saved) : MOCK_TOURS;
+  });
+
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('av_vehicles', JSON.stringify(vehicles));
@@ -66,6 +84,15 @@ function App() {
     localStorage.setItem('av_expenses', JSON.stringify(expenses));
   }, [expenses]);
 
+  useEffect(() => {
+    localStorage.setItem('av_tours', JSON.stringify(tours));
+  }, [tours]);
+
+  // Reset pagination when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
+
   // Search State
   const [searchLocation, setSearchLocation] = useState('');
   const [pickupDate, setPickupDate] = useState('');
@@ -74,25 +101,40 @@ function App() {
 
   const t = TRANSLATIONS[lang];
 
-  // Helper: Check overlap
+  // Helper: Check overlap with Buffer
   const isDateOverlap = (start1: string, end1: string, start2: string, end2: string) => {
-    return start1 <= end2 && start2 <= end1;
+    // Add buffer to existing reservation end date
+    const existingEnd = new Date(end2);
+    existingEnd.setDate(existingEnd.getDate() + MAINTENANCE_BUFFER_DAYS);
+    const bufferedEnd2 = existingEnd.toISOString().split('T')[0];
+
+    // Standard overlap check: (StartA <= EndB) and (EndA >= StartB)
+    return start1 <= bufferedEnd2 && end1 >= start2;
   };
 
   // Availability Logic
   const getVehicleAvailability = (vehicleId: string) => {
-    // If no dates selected, check generic 'available' flag and status
+    const v = vehicles.find(veh => veh.id === vehicleId);
+    if (!v) return false;
+
+    // 1. Strict Maintenance Check: If 'maintenance', it is unavailable regardless of dates
+    if (v.status === 'maintenance') return false;
+
+    // 2. If no dates selected, assume available (since we passed maintenance check)
     if (!pickupDate || !dropoffDate) {
-       const v = vehicles.find(veh => veh.id === vehicleId);
-       // If status is maintenance, it's unavailable regardless of dates
-       if (v?.status === 'maintenance') return false;
        return true;
     }
 
-    // Check specific reservations overlaps
+    // 3. Check specific reservations overlaps with buffer
     const conflictingReservation = reservations.find(res => {
       if (res.vehicleId !== vehicleId) return false;
-      if (res.status === 'cancelled' || res.status === 'completed') return false;
+      
+      // Ignore cancelled reservations
+      if (res.status === 'cancelled') return false;
+      
+      // We include 'completed' reservations in the overlap check to ensure 
+      // the maintenance buffer (cleaning time) is respected even after a car is returned.
+      
       return isDateOverlap(pickupDate, dropoffDate, res.startDate, res.endDate);
     });
 
@@ -101,19 +143,25 @@ function App() {
 
   // Filtering Logic
   const filteredVehicles = vehicles.filter(v => {
-    // 1. Filter by Category
     if (selectedCategory !== 'all' && v.category !== selectedCategory) return false;
-    
-    // 2. Filter by Maintenance
-    // Admin sees everything in admin panel, but in Client 'Fleet' view, we hide maintenance or show as unavailable
-    // Here we will keep them visible but disabled in UI if status is maintenance
-    
     return true;
   });
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredVehicles.length / ITEMS_PER_PAGE);
+  const currentVehicles = filteredVehicles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleBook = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setIsModalOpen(true);
+  };
+  
+  const handleBookTour = (tour: Tour) => {
+    setSelectedTourForBooking(tour);
+    setIsTourModalOpen(true);
   };
 
   const handleLogin = (loggedInUser: User) => {
@@ -130,10 +178,19 @@ function App() {
     setView('home');
   };
 
+  const handleUpdateUser = (updatedData: Partial<User>) => {
+     if (user) {
+        const newUser = { ...user, ...updatedData };
+        setUser(newUser);
+     }
+  };
+
   const handleCreateReservation = (data: Partial<Reservation>) => {
     const newReservation: Reservation = {
       id: `RES-${Date.now()}`,
-      vehicleId: data.vehicleId!,
+      vehicleId: data.vehicleId, 
+      tourId: data.tourId,
+      type: data.type || 'vehicle',
       userId: data.userId!,
       customerName: data.customerName!,
       startDate: data.startDate!,
@@ -141,17 +198,38 @@ function App() {
       status: data.status || 'pending',
       total: data.total!,
       discount: data.discount || 0,
+      paidAmount: data.paidAmount || (data.total! * 0.15), // Assuming deposit paid if creating new
       pickupType: data.pickupType as any,
       pickupAddress: data.pickupAddress,
       flightNumber: data.flightNumber,
       numberOfPassengers: data.numberOfPassengers,
-      extras: data.extras!,
+      extras: data.extras,
       paymentMethod: data.paymentMethod as any,
       paymentStatus: data.paymentStatus || 'pending',
       transactionId: data.transactionId,
       dateCreated: new Date().toISOString().split('T')[0]
     };
+    
     setReservations([newReservation, ...reservations]);
+
+    // Financial Logic: Record Transaction Fee
+    if (data.paymentStatus === 'paid' && data.paymentMethod && data.total) {
+      // Fee is calculated on the amount ACTUALLY paid (e.g. Deposit)
+      const amountPaid = newReservation.paidAmount || 0;
+      const feePercentage = TRANSACTION_FEES[data.paymentMethod as keyof typeof TRANSACTION_FEES] || 0;
+      
+      if (feePercentage > 0 && amountPaid > 0) {
+        const feeAmount = Math.round(amountPaid * feePercentage);
+        const newExpense: Expense = {
+          id: `EXP-FEE-${Date.now()}`,
+          description: `Transaction Fee (${data.paymentMethod}) - Res #${newReservation.id}`,
+          amount: feeAmount,
+          category: 'other',
+          date: new Date().toISOString().split('T')[0]
+        };
+        setExpenses(prev => [newExpense, ...prev]);
+      }
+    }
   };
 
   const handleUpdateVehicle = (updatedVehicle: Vehicle) => {
@@ -167,19 +245,38 @@ function App() {
   };
 
   const handleUpdateReservationStatus = (id: string, status: ReservationStatus) => {
-    setReservations(reservations.map(r => r.id === id ? { ...r, status } : r));
+    // 1. Update the Reservation Status
+    setReservations(prevReservations => {
+        return prevReservations.map(r => {
+            if (r.id !== id) return r;
+
+            // Logic for "Check-out" (Active) - Calculating remaining payment
+            if (status === 'active' && r.paymentStatus === 'paid' && r.paidAmount && r.paidAmount < r.total) {
+                // If moving to active, assume customer pays the rest at counter
+                const remaining = r.total - r.paidAmount;
+                // We could trigger a "Payment Received" expense log here or update paidAmount
+                return { ...r, status, paidAmount: r.total }; // Mark fully paid
+            }
+
+            return { ...r, status };
+        });
+    });
     
     const res = reservations.find(r => r.id === id);
     if (!res) return;
 
-    // Logic to update Vehicle Status based on Reservation Status
-    if (status === 'active') {
-      // Car is now on the road
-      setVehicles(vehicles.map(v => v.id === res.vehicleId ? { ...v, status: 'rented', available: false } : v));
-    } else if (status === 'completed' || status === 'cancelled') {
-      // Car returned
-      setVehicles(vehicles.map(v => v.id === res.vehicleId ? { ...v, status: 'available', available: true } : v));
+    // 2. Update Vehicle Status (If it's a vehicle reservation)
+    if (res.vehicleId) {
+        if (status === 'active') {
+          setVehicles(vehicles.map(v => v.id === res.vehicleId ? { ...v, status: 'rented', available: false } : v));
+        } else if (status === 'completed' || status === 'cancelled') {
+          setVehicles(vehicles.map(v => v.id === res.vehicleId ? { ...v, status: 'available', available: true } : v));
+        }
     }
+  };
+
+  const handleCancelReservation = (id: string) => {
+      handleUpdateReservationStatus(id, 'cancelled');
   };
 
   const handleReviewAction = (id: string, action: 'approved' | 'rejected') => {
@@ -206,6 +303,19 @@ function App() {
     }
   };
 
+  // Tours Handlers
+  const handleAddTour = (newTour: Tour) => {
+    setTours([...tours, newTour]);
+  };
+
+  const handleUpdateTour = (updatedTour: Tour) => {
+    setTours(tours.map(t => t.id === updatedTour.id ? updatedTour : t));
+  };
+
+  const handleDeleteTour = (id: string) => {
+    setTours(tours.filter(t => t.id !== id));
+  };
+
   const renderContent = () => {
     if (view === 'admin' && user?.role === 'admin') {
       return (
@@ -215,6 +325,7 @@ function App() {
           vehicles={vehicles}
           reviews={reviews}
           expenses={expenses}
+          tours={tours}
           onUpdateVehicle={handleUpdateVehicle}
           onAddVehicle={handleAddVehicle}
           onDeleteVehicle={handleDeleteVehicle}
@@ -222,6 +333,9 @@ function App() {
           onReviewAction={handleReviewAction}
           onAddExpense={handleAddExpense}
           onDeleteExpense={handleDeleteExpense}
+          onAddTour={handleAddTour}
+          onUpdateTour={handleUpdateTour}
+          onDeleteTour={handleDeleteTour}
         />
       );
     }
@@ -231,12 +345,15 @@ function App() {
          <CustomerDashboard 
             t={t} 
             reservations={reservations.filter(r => r.userId === user.id)}
+            tours={tours}
+            currentUser={user}
             onAddReview={handleAddReview}
+            onUpdateUser={handleUpdateUser}
+            onCancelReservation={handleCancelReservation}
          />
       );
     }
 
-    // Home View
     return (
       <main>
         <Hero 
@@ -250,12 +367,10 @@ function App() {
           onSearch={handleSearch}
         />
         
-        {/* Fleet Section */}
         <div id="fleet-section" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <h2 className="text-3xl font-bold text-slate-900">{t.nav.fleet}</h2>
             
-            {/* Filters */}
             <div className="flex flex-wrap gap-2">
               {['all', 'economy', 'suv', 'luxury', 'van'].map(cat => (
                 <button
@@ -273,12 +388,10 @@ function App() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredVehicles.map((vehicle) => {
+            {currentVehicles.map((vehicle) => {
               const isAvailable = getVehicleAvailability(vehicle.id);
               
-              // Calculate dynamic stats based on approved reviews
               const vehicleReviews = reviews.filter(r => r.vehicleId === vehicle.id && r.status === 'approved');
               const hasReviews = vehicleReviews.length > 0;
               
@@ -353,7 +466,19 @@ function App() {
               </div>
             )})}
           </div>
+
+          <Pagination 
+             currentPage={currentPage}
+             totalPages={totalPages}
+             onPageChange={(page) => {
+                setCurrentPage(page);
+                document.getElementById('fleet-section')?.scrollIntoView({ behavior: 'smooth' });
+             }}
+             t={t}
+          />
         </div>
+
+        <TourPackages t={t} tours={tours} onBookTour={handleBookTour} />
       </main>
     );
   };
@@ -393,6 +518,21 @@ function App() {
         />
       )}
 
+      {selectedTourForBooking && (
+        <TourBookingModal
+            tour={selectedTourForBooking}
+            isOpen={isTourModalOpen}
+            onClose={() => setIsTourModalOpen(false)}
+            t={t}
+            currentUser={user}
+            onLoginRequest={() => {
+                setIsTourModalOpen(false);
+                setIsLoginModalOpen(true);
+            }}
+            onCreateReservation={handleCreateReservation}
+        />
+      )}
+
       <LoginModal 
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
@@ -400,6 +540,15 @@ function App() {
         t={t}
       />
     </div>
+  );
+}
+
+// Wrapper for Provider
+function App() {
+  return (
+    <NotificationProvider>
+      <AppContent />
+    </NotificationProvider>
   );
 }
 

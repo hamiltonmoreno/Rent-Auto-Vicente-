@@ -1,18 +1,10 @@
 
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { X, Upload, CheckCircle, CreditCard, Truck, Shield, MapPin, Baby, Navigation, Calendar, Wallet, Check, Plane, Users, Phone, Loader2, Lock, FileCheck } from 'lucide-react';
 import { Vehicle, Translation, Review, ReservationExtras, User, PaymentMethod } from '../types';
 import { EXTRAS_PRICING } from '../constants';
 import { StarRating } from './StarRating';
+import { useNotification } from './NotificationSystem';
 
 interface BookingModalProps {
   vehicle: Vehicle;
@@ -39,6 +31,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   defaultStartDate = '',
   defaultEndDate = ''
 }) => {
+  const { notify } = useNotification();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
@@ -162,9 +155,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   const handleFileUpload = () => {
-     // Mock upload
      setTimeout(() => {
         setLicenseFile("drivers_license_scan.jpg");
+        notify('success', t.booking.upload_success);
      }, 800);
   };
 
@@ -183,13 +176,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     // Basic Validation for Payment Fields
     if (paymentMethod === 'card' || paymentMethod === 'stripe') {
         if (!cardDetails.number || !cardDetails.name || !cardDetails.expiry || !cardDetails.cvc) {
-            alert("Please fill in all card details.");
+            notify('error', "Please fill in all card details.");
             return;
         }
         setProcessingStatus(t.booking.payment_processing);
     } else if (paymentMethod === 'vinti4') {
         if (!vinti4Phone || vinti4Phone.length < 7) {
-            alert("Please enter a valid phone number.");
+            notify('error', "Please enter a valid phone number.");
             return;
         }
         // Retrieve configured credentials
@@ -198,7 +191,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         
         if (posId) {
             setProcessingStatus(`Connecting to Vinti4 POS: ${posId}...`);
-            // Mock logging the transaction attempt
             console.log(`[Vinti4 Integration] Initiating transaction... POS ID: ${posId}, Token: ${posToken ? '****' : 'Missing'}`);
         } else {
             setProcessingStatus(t.booking.payment_processing);
@@ -232,6 +224,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         paymentStatus: 'paid', // Simulate successful charge
         transactionId: `TX-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
       });
+      notify('success', t.booking.success_title);
       setStep(4); // Success
     }, 2500);
   };
@@ -569,4 +562,220 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         <span className="text-xs text-slate-500">Safety seat for ages 1-4</span>
                       </div>
                     </div>
-                    <input
+                    <input type="checkbox" checked={extras.childSeat} onChange={(e) => setExtras({...extras, childSeat: e.target.checked})} className="h-5 w-5 accent-red-600" />
+                  </label>
+                </div>
+
+                <div className="flex gap-4">
+                  <button onClick={() => setStep(1)} className="flex-1 rounded-lg border border-slate-300 py-3 font-semibold text-slate-700 hover:bg-slate-50">Back</button>
+                  <button onClick={() => setStep(3)} className="flex-1 rounded-lg bg-slate-900 py-3 font-semibold text-white hover:bg-slate-800">Next: Documents</button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Documents */}
+            {step === 3 && (
+              <div className="space-y-6 animate-in fade-in">
+                <h4 className="text-lg font-bold text-slate-900">{t.booking.step_docs}</h4>
+                
+                <div className="rounded-lg bg-blue-50 p-4">
+                  <p className="text-sm text-blue-800">
+                    Please upload a photo of your Driver's License. You can also do this later from your dashboard.
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-slate-300 px-6 py-10 hover:border-red-500 hover:bg-red-50/30 transition-all cursor-pointer" onClick={handleFileUpload}>
+                    <div className="text-center">
+                       {licenseFile ? (
+                          <>
+                             <FileCheck className="mx-auto h-12 w-12 text-emerald-500" />
+                             <div className="mt-4 flex text-sm leading-6 text-slate-600 justify-center">
+                                <span className="font-semibold text-emerald-600">{licenseFile}</span>
+                             </div>
+                             <p className="text-xs text-emerald-500">Ready for submission</p>
+                          </>
+                       ) : (
+                          <>
+                             <Upload className="mx-auto h-12 w-12 text-slate-300" />
+                             <div className="mt-4 flex text-sm leading-6 text-slate-600 justify-center">
+                                <span className="relative rounded-md bg-white font-semibold text-red-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-red-600 focus-within:ring-offset-2 hover:text-red-500">
+                                   {t.booking.upload_license}
+                                </span>
+                             </div>
+                             <p className="text-xs text-slate-500">PNG, JPG up to 10MB</p>
+                          </>
+                       )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button onClick={() => setStep(2)} className="flex-1 rounded-lg border border-slate-300 py-3 font-semibold text-slate-700 hover:bg-slate-50">Back</button>
+                  <button onClick={() => setStep(4)} className="flex-1 rounded-lg bg-slate-900 py-3 font-semibold text-white hover:bg-slate-800">Next: Payment</button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Payment */}
+            {step === 4 && (
+              <div className="space-y-6 animate-in fade-in">
+                <h4 className="text-lg font-bold text-slate-900">{t.booking.payment_method}</h4>
+                
+                <div className="space-y-3">
+                  <button 
+                    onClick={() => setPaymentMethod('vinti4')}
+                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-all ${paymentMethod === 'vinti4' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CreditCard size={20} />
+                      <span className="font-semibold">{t.booking.pay_vinti4}</span>
+                    </div>
+                    {paymentMethod === 'vinti4' && <CheckCircle size={20} />}
+                  </button>
+
+                  <button 
+                    onClick={() => setPaymentMethod('card')}
+                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-all ${paymentMethod === 'card' ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CreditCard size={20} />
+                      <span className="font-semibold">{t.booking.pay_card}</span>
+                    </div>
+                    {paymentMethod === 'card' && <CheckCircle size={20} />}
+                  </button>
+
+                  <button 
+                    onClick={() => setPaymentMethod('stripe')}
+                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-all ${paymentMethod === 'stripe' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CreditCard size={20} />
+                      <span className="font-semibold">{t.booking.pay_stripe}</span>
+                    </div>
+                    {paymentMethod === 'stripe' && <CheckCircle size={20} />}
+                  </button>
+
+                  <button 
+                    onClick={() => setPaymentMethod('paypal')}
+                    className={`flex w-full items-center justify-between rounded-lg border p-4 transition-all ${paymentMethod === 'paypal' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 hover:bg-slate-50'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Wallet size={20} />
+                      <span className="font-semibold">{t.booking.pay_paypal}</span>
+                    </div>
+                    {paymentMethod === 'paypal' && <CheckCircle size={20} />}
+                  </button>
+                </div>
+
+                {/* Dynamic Payment Forms */}
+                <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    {paymentMethod === 'vinti4' && (
+                        <div className="space-y-3 animate-in fade-in">
+                            <label className="block text-sm font-medium text-slate-700">{t.booking.vinti4_phone}</label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <input 
+                                    type="tel" 
+                                    value={vinti4Phone}
+                                    onChange={(e) => setVinti4Phone(e.target.value)}
+                                    placeholder="9911234" 
+                                    className="block w-full rounded-md border-slate-300 pl-9 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2 border" 
+                                />
+                            </div>
+                            <p className="text-xs text-slate-500">{t.booking.vinti4_instr}</p>
+                        </div>
+                    )}
+
+                    {(paymentMethod === 'card' || paymentMethod === 'stripe') && (
+                        <div className="space-y-3 animate-in fade-in">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">{t.booking.card_holder}</label>
+                                <input 
+                                    type="text" 
+                                    value={cardDetails.name}
+                                    onChange={(e) => setCardDetails({...cardDetails, name: e.target.value})}
+                                    placeholder="John Doe" 
+                                    className="block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm p-2 border" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">{t.booking.card_number}</label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                    <input 
+                                        type="text" 
+                                        value={cardDetails.number}
+                                        onChange={handleCardNumberChange}
+                                        placeholder="0000 0000 0000 0000" 
+                                        maxLength={19}
+                                        className="block w-full rounded-md border-slate-300 pl-9 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm py-2 border" 
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-700 mb-1">{t.booking.card_expiry}</label>
+                                    <input 
+                                        type="text" 
+                                        value={cardDetails.expiry}
+                                        onChange={(e) => setCardDetails({...cardDetails, expiry: e.target.value})}
+                                        placeholder="MM/YY" 
+                                        maxLength={5}
+                                        className="block w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm p-2 border" 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-700 mb-1">{t.booking.card_cvc}</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-2.5 h-3 w-3 text-slate-400" />
+                                        <input 
+                                            type="text" 
+                                            value={cardDetails.cvc}
+                                            onChange={(e) => setCardDetails({...cardDetails, cvc: e.target.value})}
+                                            placeholder="123" 
+                                            maxLength={4}
+                                            className="block w-full rounded-md border-slate-300 pl-8 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:text-sm p-2 border" 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            {paymentMethod === 'stripe' && <p className="text-xs text-slate-500">{t.booking.stripe_instr}</p>}
+                        </div>
+                    )}
+
+                    {paymentMethod === 'paypal' && (
+                        <div className="text-center py-4 animate-in fade-in">
+                            <p className="text-sm text-slate-600 mb-2">{t.booking.paypal_instr}</p>
+                            <button className="bg-[#0070ba] text-white px-4 py-2 rounded-full font-bold text-sm hover:bg-[#005ea6]">
+                                PayPal Checkout
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button onClick={() => setStep(3)} className="flex-1 rounded-lg border border-slate-300 py-3 font-semibold text-slate-700 hover:bg-slate-50">Back</button>
+                  <button 
+                    onClick={handlePayment}
+                    disabled={isProcessing}
+                    className="flex-1 rounded-lg bg-red-600 py-3 font-bold text-white shadow-lg hover:bg-red-500 hover:shadow-red-500/25 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                       <>
+                         <Loader2 className="animate-spin" size={20} />
+                         {processingStatus}
+                       </>
+                    ) : (
+                       t.booking.confirm_pay
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

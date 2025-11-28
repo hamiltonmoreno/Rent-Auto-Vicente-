@@ -1,16 +1,6 @@
 
 
-
-
-
-
-
-
-
-
-
-
-import { Translation, Vehicle, Reservation, Review, Expense } from './types';
+import { Translation, Vehicle, Reservation, Review, Expense, Tour } from './types';
 
 // Placeholder logo that matches the described Red/Silver circular design. 
 // Replace this URL with the actual URL of your hosted image.
@@ -28,6 +18,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
     nav: {
       home: 'Início',
       fleet: 'Frota',
+      tours: 'Tours',
       admin: 'Administração',
       login: 'Entrar',
       logout: 'Sair',
@@ -50,6 +41,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
       luxury: 'Luxo',
       automatic: 'Automático',
       manual: 'Manual',
+      van: 'Van',
     },
     vehicle: {
       day: 'dia',
@@ -122,6 +114,26 @@ export const TRANSLATIONS: Record<string, Translation> = {
       stripe_instr: 'Pagamento seguro processado via Stripe.',
       paypal_instr: 'Você será redirecionado para o PayPal para completar sua compra.',
     },
+    tour_booking: {
+      title: 'Comprar Pacote de Tour',
+      select_date: 'Data do Passeio',
+      guests: 'Número de Pessoas',
+      total_price: 'Preço Total',
+      confirm_purchase: 'Confirmar Compra',
+      success_title: 'Compra Realizada com Sucesso!',
+      success_msg: 'Seu tour foi agendado. Prepare-se para a aventura!',
+      email_sent: 'Um e-mail de confirmação foi enviado para',
+      download_ticket: 'Baixar Voucher',
+    },
+    tours: {
+      title: 'Experiências em Santiago',
+      subtitle: 'Descubra a ilha com nossos pacotes exclusivos com motorista ou self-drive.',
+      book_tour: 'Ver Frota Disponível',
+      duration: 'Duração',
+      included: 'Inclui',
+      view_details: 'Ver Detalhes',
+      buy_now: 'Comprar Pacote',
+    },
     admin: {
       dashboard: 'Painel Admin',
       revenue: 'Receita Mensal',
@@ -139,9 +151,12 @@ export const TRANSLATIONS: Record<string, Translation> = {
       tabs_reviews: 'Avaliações',
       tabs_settings: 'Configurações',
       tabs_finance: 'Financeiro',
+      tabs_tours: 'Tours',
+      tabs_reports: 'Relatórios',
       filter_pending: 'Pendentes',
       filter_all: 'Todos',
       add_vehicle: 'Adicionar Veículo',
+      add_tour: 'Adicionar Tour',
       edit: 'Editar',
       delete: 'Excluir',
       plate: 'Matrícula',
@@ -154,7 +169,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
       mark_cancelled: 'Cancelar',
       confirm: 'Confirmar',
       confirm_delete: 'Tem certeza que deseja excluir este veículo?',
-      api_key_label: 'Chave da API (Serviços Externos)',
+      api_key_label: 'Chave da API Geral (Mapas, etc)',
       api_key_placeholder: 'Insira sua chave de API aqui...',
       vinti4_section: 'Integração Rede Vinti4',
       vinti4_pos_id: 'ID do POS (Vinti4)',
@@ -180,6 +195,42 @@ export const TRANSLATIONS: Record<string, Translation> = {
       fin_recent_transactions: 'Transações Recentes',
       fin_type_income: 'Receita (Reserva)',
       fin_type_expense: 'Despesa',
+      // Settings sub-tabs
+      settings_general: 'Dados da Empresa',
+      settings_integrations: 'Integrações',
+      settings_payments: 'Pagamentos',
+      comp_name: 'Nome da Empresa',
+      comp_email: 'Email de Contato',
+      comp_phone: 'Telefone',
+      comp_address: 'Endereço Físico',
+      // Tours
+      tour_title: 'Título',
+      tour_price: 'Preço',
+      tour_features: 'Destaques',
+      tour_features_help: 'Separados por vírgula',
+      // Reports
+      rep_occupancy: 'Taxa de Ocupação',
+      rep_avg_ticket: 'Ticket Médio',
+      rep_rev_by_cat: 'Receita por Categoria',
+      rep_monthly_growth: 'Crescimento Mensal',
+      rep_export_csv: 'Exportar CSV',
+      rep_export_pdf: 'Exportar PDF',
+      rep_statement: 'Demonstrativo Financeiro (DRE)',
+      rep_avg_duration: 'Duração Média (Dias)',
+      rep_days_rented: 'Total Dias Alugados',
+      rep_status_dist: 'Distribuição por Status',
+      rep_vehicle_perf: 'Desempenho da Frota',
+      rep_top_vehicles: 'Top 5 Veículos (Receita)',
+      rep_perf_days: 'Dias Alugados',
+      rep_perf_revenue: 'Receita Total',
+      // Filters
+      rep_filter_date_start: 'Data Início',
+      rep_filter_date_end: 'Data Fim',
+      rep_filter_vehicle: 'Veículo',
+      rep_filter_category: 'Categoria',
+      rep_filter_type: 'Tipo de Transação',
+      rep_filter_clear: 'Limpar Filtros',
+      rep_filter_apply: 'Aplicar',
     },
     customer: {
       dashboard: 'Minhas Reservas',
@@ -188,6 +239,13 @@ export const TRANSLATIONS: Record<string, Translation> = {
       review_submitted: 'Enviada',
       download_contract: 'Contrato',
       cancel_booking: 'Cancelar',
+      confirm_cancel: 'Tem certeza que deseja cancelar esta reserva? (Grátis se faltar mais de 48h)',
+      tabs_reservations: 'Minhas Reservas',
+      tabs_profile: 'Configurações de Perfil',
+      profile_settings: 'Editar Perfil',
+      personal_details: 'Dados Pessoais',
+      save_changes: 'Salvar Alterações',
+      profile_updated: 'Perfil atualizado com sucesso!',
     },
     auth: {
       login_title: 'Acessar Conta',
@@ -208,11 +266,18 @@ export const TRANSLATIONS: Record<string, Translation> = {
       privacy: 'Privacidade',
       terms: 'Termos',
     },
+    pagination: {
+      prev: 'Anterior',
+      next: 'Próximo',
+      page: 'Página',
+      of: 'de',
+    },
   },
   en: {
     nav: {
       home: 'Home',
       fleet: 'Fleet',
+      tours: 'Tours',
       admin: 'Admin',
       login: 'Login',
       logout: 'Logout',
@@ -235,6 +300,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
       luxury: 'Luxury',
       automatic: 'Automatic',
       manual: 'Manual',
+      van: 'Van',
     },
     vehicle: {
       day: 'day',
@@ -307,6 +373,26 @@ export const TRANSLATIONS: Record<string, Translation> = {
       stripe_instr: 'Secure payment processed via Stripe.',
       paypal_instr: 'You will be redirected to PayPal to complete your purchase.',
     },
+    tour_booking: {
+      title: 'Buy Tour Package',
+      select_date: 'Tour Date',
+      guests: 'Number of Guests',
+      total_price: 'Total Price',
+      confirm_purchase: 'Confirm Purchase',
+      success_title: 'Purchase Successful!',
+      success_msg: 'Your tour has been scheduled. Get ready for the adventure!',
+      email_sent: 'A confirmation email has been sent to',
+      download_ticket: 'Download Voucher',
+    },
+    tours: {
+      title: 'Santiago Experiences',
+      subtitle: 'Discover the island with our exclusive driver or self-drive packages.',
+      book_tour: 'See Available Fleet',
+      duration: 'Duration',
+      included: 'Included',
+      view_details: 'View Details',
+      buy_now: 'Buy Package',
+    },
     admin: {
       dashboard: 'Dashboard',
       revenue: 'Monthly Revenue',
@@ -324,9 +410,12 @@ export const TRANSLATIONS: Record<string, Translation> = {
       tabs_reviews: 'Reviews',
       tabs_settings: 'Settings',
       tabs_finance: 'Finance',
+      tabs_tours: 'Tours',
+      tabs_reports: 'Reports',
       filter_pending: 'Pending',
       filter_all: 'All',
       add_vehicle: 'Add Vehicle',
+      add_tour: 'Add Tour',
       edit: 'Edit',
       delete: 'Delete',
       plate: 'Plate',
@@ -339,7 +428,7 @@ export const TRANSLATIONS: Record<string, Translation> = {
       mark_cancelled: 'Cancel',
       confirm: 'Confirm',
       confirm_delete: 'Are you sure you want to delete this vehicle?',
-      api_key_label: 'API Key (External Services)',
+      api_key_label: 'General API Key (Maps, etc)',
       api_key_placeholder: 'Enter your API key here...',
       vinti4_section: 'Vinti4 Network Integration',
       vinti4_pos_id: 'POS ID (Vinti4)',
@@ -365,6 +454,42 @@ export const TRANSLATIONS: Record<string, Translation> = {
       fin_recent_transactions: 'Recent Transactions',
       fin_type_income: 'Income (Reservation)',
       fin_type_expense: 'Expense',
+      // Settings sub-tabs
+      settings_general: 'Company Details',
+      settings_integrations: 'Integrations',
+      settings_payments: 'Payments',
+      comp_name: 'Company Name',
+      comp_email: 'Contact Email',
+      comp_phone: 'Phone Number',
+      comp_address: 'Physical Address',
+      // Tours
+      tour_title: 'Title',
+      tour_price: 'Price',
+      tour_features: 'Features',
+      tour_features_help: 'Comma separated',
+      // Reports
+      rep_occupancy: 'Occupancy Rate',
+      rep_avg_ticket: 'Average Ticket',
+      rep_rev_by_cat: 'Revenue by Category',
+      rep_monthly_growth: 'Monthly Growth',
+      rep_export_csv: 'Export CSV',
+      rep_export_pdf: 'Export PDF',
+      rep_statement: 'Financial Statement',
+      rep_avg_duration: 'Avg Duration (Days)',
+      rep_days_rented: 'Total Days Rented',
+      rep_status_dist: 'Status Distribution',
+      rep_vehicle_perf: 'Fleet Performance',
+      rep_top_vehicles: 'Top 5 Vehicles (Revenue)',
+      rep_perf_days: 'Days Rented',
+      rep_perf_revenue: 'Total Revenue',
+      // Filters
+      rep_filter_date_start: 'Start Date',
+      rep_filter_date_end: 'End Date',
+      rep_filter_vehicle: 'Vehicle',
+      rep_filter_category: 'Category',
+      rep_filter_type: 'Transaction Type',
+      rep_filter_clear: 'Clear Filters',
+      rep_filter_apply: 'Apply',
     },
     customer: {
       dashboard: 'My Reservations',
@@ -373,6 +498,13 @@ export const TRANSLATIONS: Record<string, Translation> = {
       review_submitted: 'Review Submitted',
       download_contract: 'Contract',
       cancel_booking: 'Cancel Booking',
+      confirm_cancel: 'Are you sure you want to cancel this reservation? (Free cancellation if >48h)',
+      tabs_reservations: 'My Reservations',
+      tabs_profile: 'Profile Settings',
+      profile_settings: 'Edit Profile',
+      personal_details: 'Personal Details',
+      save_changes: 'Save Changes',
+      profile_updated: 'Profile updated successfully!',
     },
     auth: {
       login_title: 'Login',
@@ -392,6 +524,12 @@ export const TRANSLATIONS: Record<string, Translation> = {
       rights: 'All rights reserved.',
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
+    },
+    pagination: {
+      prev: 'Previous',
+      next: 'Next',
+      page: 'Page',
+      of: 'of',
     },
   },
 };
@@ -499,6 +637,7 @@ export const MOCK_RESERVATIONS: Reservation[] = [
   {
     id: 'RES-001',
     vehicleId: '4',
+    type: 'vehicle',
     userId: 'user-001',
     customerName: 'João Silva',
     startDate: '2023-11-01',
@@ -515,6 +654,7 @@ export const MOCK_RESERVATIONS: Reservation[] = [
   {
     id: 'RES-002',
     vehicleId: '2',
+    type: 'vehicle',
     userId: 'user-002',
     customerName: 'Maria Santos',
     startDate: '2023-11-10',
@@ -531,6 +671,7 @@ export const MOCK_RESERVATIONS: Reservation[] = [
   {
     id: 'RES-003',
     vehicleId: '1',
+    type: 'vehicle',
     userId: 'user-001',
     customerName: 'João Silva',
     startDate: '2023-09-01',
@@ -613,4 +754,34 @@ export const MOCK_EXPENSES: Expense[] = [
     category: 'marketing',
     date: '2023-11-05',
   },
+];
+
+export const MOCK_TOURS: Tour[] = [
+  {
+    id: 'TOUR-001',
+    title: 'Volta à Ilha Completa',
+    description: 'Descubra as maravilhas de Santiago num dia. Passagem por Assomada, Tarrafal, Serra Malagueta e Calheta.',
+    image: 'https://images.unsplash.com/photo-1596395819057-d37e29b1284c?q=80&w=800&auto=format&fit=crop',
+    duration: '8 Horas (Full Day)',
+    price: 12000,
+    features: ['Guia Local', 'Almoço Típico', 'Pick-up Hotel'],
+  },
+  {
+    id: 'TOUR-002',
+    title: 'Cidade Velha Histórica',
+    description: 'Visite o berço da nação cabo-verdiana, Património Mundial da UNESCO. Fortaleza Real e Rua Banana.',
+    image: 'https://images.unsplash.com/photo-1620327315357-1950d8774775?q=80&w=800&auto=format&fit=crop',
+    duration: '4 Horas (Half Day)',
+    price: 6000,
+    features: ['Entrada Fortaleza', 'Degustação Grogue', 'História'],
+  },
+  {
+    id: 'TOUR-003',
+    title: 'Relax em Tarrafal',
+    description: 'Transporte direto para a praia mais bonita da ilha. Tempo livre para nadar e relaxar.',
+    image: 'https://images.unsplash.com/photo-1544645224-b5a75971a858?q=80&w=800&auto=format&fit=crop',
+    duration: '6 Horas',
+    price: 9000,
+    features: ['Transfer Privado', 'Cadeira Praia', 'Bebidas'],
+  }
 ];

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { X, User, ShieldCheck } from 'lucide-react';
 import { Translation, User as UserType } from '../types';
@@ -18,7 +19,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
       id: 'admin-001',
       name: 'Admin User',
       email: 'admin@autovicente.cv',
-      role: 'admin'
+      role: 'admin',
+      phone: '+238 991 00 00'
     });
     onClose();
   };
@@ -28,7 +30,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin
       id: 'user-001',
       name: 'João Silva',
       email: 'joao@example.com',
-      role: 'customer'
+      role: 'customer',
+      phone: '+238 555 12 34'
     });
     onClose();
   };
