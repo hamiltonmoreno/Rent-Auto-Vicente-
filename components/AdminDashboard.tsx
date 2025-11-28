@@ -30,7 +30,8 @@ const COLORS = ['#dc2626', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1'
 const STATUS_COLORS = {
     available: '#10b981', // emerald
     rented: '#3b82f6',    // blue
-    maintenance: '#f59e0b' // amber
+    maintenance: '#f59e0b', // amber
+    cleaning: '#8b5cf6'   // purple for buffer/cleaning
 };
 
 interface AdminDashboardProps {
@@ -130,6 +131,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const pendingReviewsCount = reviews.filter(r => r.status === 'pending').length;
 
+  // SMART STATUS LOGIC
+  const getRealTimeVehicleStatus = (vehicle: Vehicle) => {
+      if (vehicle.status === 'maintenance') return 'maintenance';
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check active rental
+      const activeRes = reservations.find(r => r.vehicleId === vehicle.id && r.status === 'active');
+      if (activeRes) return 'rented';
+
+      // Check Buffer: If a reservation ended TODAY, it is in cleaning mode for the rest of the day (assuming 1 day buffer)
+      // Logic: If endDate is today, it was just returned. Not available immediately.
+      const recentReturn = reservations.find(r => 
+          r.vehicleId === vehicle.id && 
+          r.status === 'completed' &&
+          r.endDate === today
+      );
+
+      if (recentReturn) return 'cleaning';
+
+      return vehicle.status === 'rented' ? 'rented' : 'available'; 
+  };
+
   // --- OVERVIEW METRICS CALCULATION ---
   const overviewMetrics = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -161,11 +185,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const growth = lastMonthRev > 0 ? ((currentMonthRev - lastMonthRev) / lastMonthRev) * 100 : 100;
 
     // 5. Fleet Status Data for Pie Chart
-    const statusCounts = { available: 0, rented: 0, maintenance: 0 };
+    const statusCounts = { available: 0, rented: 0, maintenance: 0, cleaning: 0 };
     vehicles.forEach(v => {
-        statusCounts[v.status]++;
+        const smartStatus = getRealTimeVehicleStatus(v);
+        // Map cleaning to maintenance for visual simplicity in pie chart or separate
+        if (smartStatus === 'cleaning') {
+            statusCounts.maintenance++; 
+        } else {
+            statusCounts[smartStatus as keyof typeof statusCounts]++;
+        }
     });
-    const fleetStatusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+    // Filter out cleaning if 0 or merge
+    const fleetStatusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value })).filter(d => d.name !== 'cleaning');
 
     return {
         pickupsToday,
@@ -1393,6 +1424,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tbody className="divide-y divide-slate-100">
                   {currentVehicles.map((v) => {
                     const catName = vehicleCategories.find(c => c.id === v.category)?.name || v.category;
+                    const smartStatus = getRealTimeVehicleStatus(v);
+                    
                     return (
                     <tr key={v.id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 font-medium text-slate-900">
@@ -1405,11 +1438,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <td className="px-6 py-4 capitalize">{catName}</td>
                       <td className="px-6 py-4 font-semibold">{v.pricePerDay.toLocaleString()}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          v.status === 'available' ? 'bg-emerald-50 text-emerald-700' : 
-                          v.status === 'maintenance' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'
-                        }`}>
-                          {v.status}
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`} 
+                              style={{ 
+                                  backgroundColor: `${STATUS_COLORS[smartStatus as keyof typeof STATUS_COLORS]}20`,
+                                  color: STATUS_COLORS[smartStatus as keyof typeof STATUS_COLORS]
+                              }}
+                        >
+                          {smartStatus === 'cleaning' ? t.admin.fleet_status_cleaning : smartStatus}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">

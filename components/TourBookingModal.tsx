@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Calendar, Users, CheckCircle, Loader2, Download, Mail } from 'lucide-react';
-import { Tour, Translation, User, PaymentMethod } from '../types';
+import { Tour, Translation, User, PaymentMethod, Reservation } from '../types';
 import { useNotification } from './NotificationSystem';
 
 interface TourBookingModalProps {
@@ -12,6 +12,7 @@ interface TourBookingModalProps {
   currentUser: User | null;
   onLoginRequest: () => void;
   onCreateReservation: (data: any) => void;
+  reservations: Reservation[];
 }
 
 export const TourBookingModal: React.FC<TourBookingModalProps> = ({
@@ -21,7 +22,8 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
   t,
   currentUser,
   onLoginRequest,
-  onCreateReservation
+  onCreateReservation,
+  reservations
 }) => {
   const { notify } = useNotification();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -37,9 +39,29 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
   const totalPrice = tour.price * guests;
 
   const handleNext = () => {
-    if (step === 1 && !date) {
-        notify('error', "Please select a date");
-        return;
+    if (step === 1) {
+        if (!date) {
+            notify('error', "Please select a date");
+            return;
+        }
+
+        // CAPACITY CHECK LOGIC
+        if (tour.capacity) {
+            const existingBookings = reservations.filter(r => 
+                r.type === 'tour' && 
+                r.tourId === tour.id && 
+                r.startDate === date && 
+                r.status !== 'cancelled'
+            );
+
+            const totalPax = existingBookings.reduce((sum, r) => sum + (r.numberOfPassengers || 0), 0);
+            const remainingSpots = tour.capacity - totalPax;
+
+            if (guests > remainingSpots) {
+                notify('error', `Overbooking: Only ${remainingSpots > 0 ? remainingSpots : 0} spots available for this date.`);
+                return;
+            }
+        }
     }
     setStep(prev => (prev + 1) as any);
   };
@@ -109,6 +131,7 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
                             <h4 className="font-bold text-slate-900">{tour.title}</h4>
                             <p className="text-sm text-slate-500">{tour.duration}</p>
                             <p className="text-red-600 font-bold mt-1">{tour.price.toLocaleString()} CVE <span className="text-xs text-slate-400 font-normal">/ person</span></p>
+                            {tour.capacity && <p className="text-xs text-slate-500 mt-1">Max capacity: {tour.capacity} pax</p>}
                         </div>
                     </div>
 
@@ -121,7 +144,7 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
                                 min={new Date().toISOString().split('T')[0]}
-                                className="block w-full rounded-md border-slate-300 pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 border"
+                                className="block w-full rounded-md border-slate-300 pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 border cursor-pointer caret-transparent"
                             />
                         </div>
                     </div>
@@ -133,7 +156,7 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
                             <select 
                                 value={guests}
                                 onChange={(e) => setGuests(Number(e.target.value))}
-                                className="block w-full rounded-md border-slate-300 pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 border"
+                                className="block w-full rounded-md border-slate-300 pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 border cursor-pointer"
                             >
                                 {[1,2,3,4,5,6,7,8,9,10].map(n => (
                                     <option key={n} value={n}>{n} People</option>

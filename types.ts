@@ -327,6 +327,8 @@ export interface Translation {
     ov_revenue_trend: string;
     ov_growth_mom: string;
     ov_pending_actions: string;
+    // Smart Status
+    fleet_status_cleaning: string;
   };
   customer: {
     dashboard: string;

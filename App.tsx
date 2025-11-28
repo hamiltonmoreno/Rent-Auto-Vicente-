@@ -13,12 +13,11 @@ import { TourPackages } from './components/TourPackages';
 import { TourBookingModal } from './components/TourBookingModal';
 import { NotificationProvider } from './components/NotificationSystem'; // Import Provider
 import { Vehicle, Language, User, Reservation, ReservationStatus, Review, Expense, Tour, CategoryItem } from './types';
-import { TRANSLATIONS, MOCK_VEHICLES, MOCK_RESERVATIONS, MOCK_REVIEWS, MOCK_EXPENSES, MOCK_TOURS, DEFAULT_VEHICLE_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES } from './constants';
+import { TRANSLATIONS, MOCK_VEHICLES, MOCK_RESERVATIONS, MOCK_REVIEWS, MOCK_EXPENSES, MOCK_TOURS, DEFAULT_VEHICLE_CATEGORIES, DEFAULT_EXPENSE_CATEGORIES, MAINTENANCE_BUFFER_DAYS } from './constants';
 import { StarRating } from './components/StarRating';
 
 const ITEMS_PER_PAGE = 6;
 // Business Logic Configuration
-const MAINTENANCE_BUFFER_DAYS = 1; // Days required between rentals for cleaning
 const TRANSACTION_FEES = {
   vinti4: 0.015, // 1.5%
   card: 0.025,   // 2.5%
@@ -273,9 +272,29 @@ function AppContent() { // Extracted inner component to use Notification Hook if
             // Logic for "Check-out" (Active) - Calculating remaining payment
             if (status === 'active' && r.paymentStatus === 'paid' && r.paidAmount && r.paidAmount < r.total) {
                 // If moving to active, assume customer pays the rest at counter
-                const remaining = r.total - r.paidAmount;
-                // We could trigger a "Payment Received" expense log here or update paidAmount
                 return { ...r, status, paidAmount: r.total }; // Mark fully paid
+            }
+
+            // FINANCIAL INTEGRITY: Automatic Refund Logic
+            // If cancelling a reservation that has been PAID (Deposit or Total), 
+            // generate a negative transaction (Expense) to represent the refund.
+            if (status === 'cancelled' && r.paymentStatus === 'paid' && (r.paidAmount || 0) > 0) {
+                const refundAmount = r.paidAmount || 0;
+                
+                // Create Refund Expense
+                const refundExpense: Expense = {
+                    id: `EXP-REFUND-${Date.now()}`,
+                    description: `Refund - Reservation #${r.id} (${r.customerName})`,
+                    amount: refundAmount,
+                    category: 'other', // Or specific refund category if available
+                    date: new Date().toISOString().split('T')[0]
+                };
+                
+                // Add expense to system
+                setExpenses(prev => [refundExpense, ...prev]);
+
+                // Update reservation to indicate refunded status
+                return { ...r, status, paymentStatus: 'refunded' };
             }
 
             return { ...r, status };
@@ -585,6 +604,7 @@ function AppContent() { // Extracted inner component to use Notification Hook if
                 setIsLoginModalOpen(true);
             }}
             onCreateReservation={handleCreateReservation}
+            reservations={reservations}
         />
       )}
 

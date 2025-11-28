@@ -6,6 +6,8 @@ import { Translation, Vehicle, Reservation, Review, Expense, Tour, CategoryItem 
 // Replace this URL with the actual URL of your hosted image.
 export const COMPANY_LOGO = "https://placehold.co/200x200/dc2626/ffffff?text=AV&font=roboto";
 
+export const MAINTENANCE_BUFFER_DAYS = 1; // Global setting for cleaning buffer
+
 export const EXTRAS_PRICING = {
   gps: 500,
   childSeat: 1000,
@@ -262,6 +264,8 @@ export const TRANSLATIONS: Record<string, Translation> = {
       ov_revenue_trend: 'Tendência de Receita',
       ov_growth_mom: 'Cresc. Mensal',
       ov_pending_actions: 'Ações Pendentes',
+      // Smart Status
+      fleet_status_cleaning: 'Em Limpeza (Buffer)',
     },
     customer: {
       dashboard: 'Minhas Reservas',
@@ -536,6 +540,8 @@ export const TRANSLATIONS: Record<string, Translation> = {
       ov_revenue_trend: 'Revenue Trend',
       ov_growth_mom: 'MoM Growth',
       ov_pending_actions: 'Pending Actions',
+      // Smart Status
+      fleet_status_cleaning: 'Cleaning (Buffer)',
     },
     customer: {
       dashboard: 'My Reservations',
