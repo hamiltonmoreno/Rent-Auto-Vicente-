@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import { X, Upload, CheckCircle, CreditCard, Truck, Shield, MapPin, Baby, Navigation, Calendar, Wallet, Check, Plane, Users, Phone, Loader2, Lock, FileCheck } from 'lucide-react';
 import { Vehicle, Translation, Review, ReservationExtras, User, PaymentMethod } from '../types';
@@ -102,21 +100,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   const totalDays = getDaysDiff(startDate, endDate);
-  
-  // Seasonal Logic
-  const getSeasonalMultiplier = (dateStr: string) => {
-      if (!dateStr) return 1;
-      const month = new Date(dateStr).getMonth(); // 0-11
-      // High Season: Dec (11), Jan (0), Jul (6), Aug (7)
-      if ([11, 0, 6, 7].includes(month)) return 1.2;
-      // Low Season: May (4), Jun (5), Sep (8), Oct (9)
-      if ([4, 5, 8, 9].includes(month)) return 0.9;
-      return 1;
-  };
-
-  const seasonalMultiplier = getSeasonalMultiplier(startDate);
-  const adjustedPricePerDay = Math.round(vehicle.pricePerDay * seasonalMultiplier);
-  const rentalBase = adjustedPricePerDay * totalDays;
+  const rentalBase = vehicle.pricePerDay * totalDays;
   
   // Dynamic Pricing: 10% discount if > 7 days
   const discount = totalDays > 7 ? rentalBase * 0.10 : 0;
@@ -315,16 +299,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">{totalDays} {t.vehicle.day}s x {adjustedPricePerDay.toLocaleString()}</span>
+                  <span className="text-slate-600">{totalDays} {t.vehicle.day}s x {vehicle.pricePerDay}</span>
                   <span className="font-medium text-slate-900">{rentalBase.toLocaleString()} CVE</span>
                 </div>
-                
-                {seasonalMultiplier !== 1 && (
-                    <div className="flex justify-between text-xs text-slate-500 italic">
-                        <span>{t.booking.seasonal_adjust}</span>
-                        <span>{seasonalMultiplier > 1 ? '+' : ''}{Math.round((seasonalMultiplier - 1) * 100)}%</span>
-                    </div>
-                )}
                 
                 {discount > 0 && (
                    <div className="flex justify-between text-sm text-emerald-600">
@@ -412,7 +389,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                          type="date" 
                          value={startDate}
                          onChange={(e) => setStartDate(e.target.value)}
-                         className={`block w-full rounded-md border pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 ${dateError ? 'border-red-500' : 'border-slate-300'} caret-transparent cursor-pointer`}
+                         className={`block w-full rounded-md border pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 ${dateError ? 'border-red-500' : 'border-slate-300'}`}
                        />
                     </div>
                   </div>
@@ -424,7 +401,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                          type="date" 
                          value={endDate}
                          onChange={(e) => setEndDate(e.target.value)}
-                         className={`block w-full rounded-md border pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 ${dateError ? 'border-red-500' : 'border-slate-300'} caret-transparent cursor-pointer`}
+                         className={`block w-full rounded-md border pl-9 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 ${dateError ? 'border-red-500' : 'border-slate-300'}`}
                        />
                     </div>
                   </div>
@@ -530,7 +507,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         <select 
                             value={numPassengers}
                             onChange={(e) => setNumPassengers(Number(e.target.value))}
-                            className="block w-full rounded-md border border-slate-300 pl-9 py-2 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm cursor-pointer"
+                            className="block w-full rounded-md border border-slate-300 pl-9 py-2 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm"
                         >
                             {[1,2,3,4,5,6,7,8].map(n => (
                                 <option key={n} value={n}>{n}</option>

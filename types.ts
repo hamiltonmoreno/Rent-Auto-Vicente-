@@ -95,6 +95,7 @@ export interface Tour {
   duration: string;
   price: number;
   features: string[];
+  capacity?: number;
 }
 
 export interface Translation {
@@ -141,8 +142,7 @@ export interface Translation {
     step_docs: string;
     step_payment: string;
     total: string;
-    discount_applied: string;
-    seasonal_adjust: string; 
+    discount_applied: string; 
     pay_now: string;
     pay_later: string;
     delivery_opt: string;
@@ -318,8 +318,6 @@ export interface Translation {
     rep_filter_type: string;
     rep_filter_clear: string;
     rep_filter_apply: string;
-    rep_quick_7days: string;
-    rep_quick_month: string;
     // Enhanced Overview
     ov_today_pickups: string;
     ov_today_returns: string;

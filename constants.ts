@@ -22,10 +22,10 @@ export const DEFAULT_VEHICLE_CATEGORIES: CategoryItem[] = [
 
 export const DEFAULT_EXPENSE_CATEGORIES: CategoryItem[] = [
   { id: 'maintenance', name: 'Maintenance', type: 'expense' },
-  { id: 'repair_shop', name: 'Oficina', type: 'expense' },
   { id: 'fuel', name: 'Fuel', type: 'expense' },
   { id: 'office', name: 'Office', type: 'expense' },
   { id: 'marketing', name: 'Marketing', type: 'expense' },
+  { id: 'oficina', name: 'Oficina', type: 'expense' },
   { id: 'other', name: 'Other', type: 'expense' }
 ];
 
@@ -75,7 +75,6 @@ export const TRANSLATIONS: Record<string, Translation> = {
       step_payment: 'Pagamento',
       total: 'Total',
       discount_applied: 'Desconto (>7 dias)',
-      seasonal_adjust: 'Ajuste de Temporada',
       pay_now: 'A pagar agora (Depósito)',
       pay_later: 'A pagar ao balcão',
       delivery_opt: 'Receber em casa (+2000 CVE)',
@@ -254,8 +253,6 @@ export const TRANSLATIONS: Record<string, Translation> = {
       rep_filter_type: 'Tipo de Transação',
       rep_filter_clear: 'Limpar Filtros',
       rep_filter_apply: 'Aplicar',
-      rep_quick_7days: 'Últimos 7 dias',
-      rep_quick_month: 'Este Mês',
       // Enhanced Overview
       ov_today_pickups: 'Levantamentos Hoje',
       ov_today_returns: 'Devoluções Hoje',
@@ -352,7 +349,6 @@ export const TRANSLATIONS: Record<string, Translation> = {
       step_payment: 'Payment',
       total: 'Total Amount',
       discount_applied: 'Discount (>7 days)',
-      seasonal_adjust: 'Seasonal Adjustment',
       pay_now: 'Pay Now (Deposit)',
       pay_later: 'Pay at Counter',
       delivery_opt: 'Deliver to location (+2000 CVE)',
@@ -531,8 +527,6 @@ export const TRANSLATIONS: Record<string, Translation> = {
       rep_filter_type: 'Transaction Type',
       rep_filter_clear: 'Clear Filters',
       rep_filter_apply: 'Apply',
-      rep_quick_7days: 'Last 7 Days',
-      rep_quick_month: 'This Month',
       // Enhanced Overview
       ov_today_pickups: 'Pickups Today',
       ov_today_returns: 'Returns Today',
@@ -816,6 +810,7 @@ export const MOCK_TOURS: Tour[] = [
     image: 'https://images.unsplash.com/photo-1596395819057-d37e29b1284c?q=80&w=800&auto=format&fit=crop',
     duration: '8 Horas (Full Day)',
     price: 12000,
+    capacity: 15,
     features: ['Guia Local', 'Almoço Típico', 'Pick-up Hotel'],
   },
   {
@@ -825,6 +820,7 @@ export const MOCK_TOURS: Tour[] = [
     image: 'https://images.unsplash.com/photo-1620327315357-1950d8774775?q=80&w=800&auto=format&fit=crop',
     duration: '4 Horas (Half Day)',
     price: 6000,
+    capacity: 20,
     features: ['Entrada Fortaleza', 'Degustação Grogue', 'História'],
   },
   {
@@ -834,6 +830,7 @@ export const MOCK_TOURS: Tour[] = [
     image: 'https://images.unsplash.com/photo-1544645224-b5a75971a858?q=80&w=800&auto=format&fit=crop',
     duration: '6 Horas',
     price: 9000,
+    capacity: 8,
     features: ['Transfer Privado', 'Cadeira Praia', 'Bebidas'],
   }
 ];

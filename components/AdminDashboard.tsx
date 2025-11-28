@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart, 
@@ -390,18 +388,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setFinFilterEndDate('');
       setFinFilterType('all');
       setFinFilterCategory('all');
-  };
-
-  const handleQuickFilter = (type: 'week' | 'month') => {
-      const end = new Date();
-      const start = new Date();
-      if (type === 'week') {
-          start.setDate(end.getDate() - 7);
-      } else {
-          start.setDate(1); // 1st of current month
-      }
-      setFilterStartDate(start.toISOString().split('T')[0]);
-      setFilterEndDate(end.toISOString().split('T')[0]);
   };
 
   // PAGINATION CALCULATIONS
@@ -809,7 +795,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                       <div className="text-right">
                           <p className="text-sm font-medium text-slate-900">{res.total.toLocaleString()} CVE</p>
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] uppercase font-bold tracking-wide ${
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide ${
                             res.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                           }`}>
                             {res.status}
@@ -827,15 +813,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
            <div className="space-y-6 animate-in fade-in">
               {/* FILTERS SECTION */}
               <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2 text-slate-900 font-semibold">
-                          <Filter size={18} />
-                          Filters
-                      </div>
-                      <div className="flex gap-2">
-                          <button onClick={() => handleQuickFilter('week')} className="px-3 py-1 text-xs border border-slate-200 rounded-full hover:bg-slate-50">{t.admin.rep_quick_7days}</button>
-                          <button onClick={() => handleQuickFilter('month')} className="px-3 py-1 text-xs border border-slate-200 rounded-full hover:bg-slate-50">{t.admin.rep_quick_month}</button>
-                      </div>
+                  <div className="flex items-center gap-2 mb-4 text-slate-900 font-semibold">
+                      <Filter size={18} />
+                      Filters
                   </div>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                       <div>
@@ -1121,3 +1101,1057 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
            </div>
         )}
+
+        {/* FINANCE TAB */}
+        {activeTab === 'finance' && (
+          <div className="space-y-6">
+             {/* Finance Cards */}
+             <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+                   <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600"><TrendingUp size={20} /></div>
+                      <p className="text-sm font-medium text-slate-500">{t.admin.fin_total_income}</p>
+                   </div>
+                   <p className="text-2xl font-bold text-slate-900">{totalRevenue.toLocaleString()} CVE</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+                   <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown size={20} /></div>
+                      <p className="text-sm font-medium text-slate-500">{t.admin.fin_total_expenses}</p>
+                   </div>
+                   <p className="text-2xl font-bold text-slate-900">{totalExpenses.toLocaleString()} CVE</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+                   <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><DollarSign size={20} /></div>
+                      <p className="text-sm font-medium text-slate-500">{t.admin.fin_net_profit}</p>
+                   </div>
+                   <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {netProfit.toLocaleString()} CVE
+                   </p>
+                </div>
+             </div>
+
+             <div className="grid gap-6 lg:grid-cols-3">
+                {/* Chart */}
+                <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+                   <h3 className="mb-6 text-lg font-bold text-slate-900">Profit & Loss</h3>
+                   <div className="h-80 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <ComposedChart data={financialData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                            <Tooltip 
+                               formatter={(value) => [`${Number(value).toLocaleString()} CVE`, '']}
+                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                            />
+                            <Legend />
+                            <Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Bar dataKey="expense" name="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Line type="monotone" dataKey="profit" name="Net Profit" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} />
+                         </ComposedChart>
+                      </ResponsiveContainer>
+                   </div>
+                </div>
+
+                {/* Add Expense Form */}
+                <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+                   <h3 className="mb-6 text-lg font-bold text-slate-900">{t.admin.fin_add_expense}</h3>
+                   <form onSubmit={handleAddExpenseSubmit} className="space-y-4">
+                      <div>
+                         <label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_desc}</label>
+                         <input name="description" required className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" placeholder="e.g. Office Rent" />
+                      </div>
+                      <div>
+                         <label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_amount}</label>
+                         <input name="amount" type="number" required className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" placeholder="0" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                         <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_category}</label>
+                            <select name="category" className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border">
+                               {expenseCategories.map(cat => (
+                                   <option key={cat.id} value={cat.id}>{cat.name}</option>
+                               ))}
+                            </select>
+                         </div>
+                         <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_date}</label>
+                            <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" />
+                         </div>
+                      </div>
+                      <button type="submit" className="w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white hover:bg-slate-800 mt-2">
+                         Add Expense
+                      </button>
+                   </form>
+                </div>
+             </div>
+
+             {/* Recent Transactions Table */}
+             <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                   <h3 className="text-lg font-bold text-slate-900">{t.admin.fin_recent_transactions}</h3>
+                   
+                   {/* Finance Filters */}
+                   <div className="flex flex-wrap gap-2 items-center">
+                        <input 
+                            type="date" 
+                            value={finFilterStartDate}
+                            onChange={(e) => setFinFilterStartDate(e.target.value)}
+                            className="rounded-md border-slate-200 text-xs py-1.5 focus:border-red-500 focus:ring-red-500"
+                        />
+                        <span className="text-slate-400">-</span>
+                        <input 
+                            type="date" 
+                            value={finFilterEndDate}
+                            onChange={(e) => setFinFilterEndDate(e.target.value)}
+                            className="rounded-md border-slate-200 text-xs py-1.5 focus:border-red-500 focus:ring-red-500"
+                        />
+                        <select 
+                            value={finFilterType} 
+                            onChange={(e) => setFinFilterType(e.target.value)}
+                            className="rounded-md border-slate-200 text-xs py-1.5 focus:border-red-500 focus:ring-red-500 min-w-[100px]"
+                        >
+                            <option value="all">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                        <select 
+                            value={finFilterCategory} 
+                            onChange={(e) => setFinFilterCategory(e.target.value)}
+                            className="rounded-md border-slate-200 text-xs py-1.5 focus:border-red-500 focus:ring-red-500 min-w-[100px]"
+                        >
+                            <option value="all">All Categories</option>
+                            <option value="Rental">Rental (Income)</option>
+                            {expenseCategories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                        <button 
+                            onClick={handleClearFinFilters}
+                            className="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-slate-50"
+                            title={t.admin.rep_filter_clear}
+                        >
+                            <RefreshCcw size={14} />
+                        </button>
+                   </div>
+                </div>
+                <div className="overflow-x-auto">
+                   <table className="w-full text-left text-sm text-slate-600">
+                      <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                         <tr>
+                            <th className="px-6 py-4">{t.admin.fin_date}</th>
+                            <th className="px-6 py-4">{t.admin.fin_desc}</th>
+                            <th className="px-6 py-4">{t.admin.fin_category}</th>
+                            <th className="px-6 py-4">Type</th>
+                            <th className="px-6 py-4 text-right">{t.admin.fin_amount}</th>
+                            <th className="px-6 py-4 text-right"></th>
+                         </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                         {currentTransactions.length > 0 ? (
+                            currentTransactions.map((item: any) => (
+                                <tr key={item.id} className="hover:bg-slate-50">
+                                <td className="px-6 py-4 font-mono text-xs">{item.date}</td>
+                                <td className="px-6 py-4">{item.description}</td>
+                                <td className="px-6 py-4 capitalize">
+                                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">
+                                        {item.category}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {item.type === 'income' ? (
+                                        <span className="text-emerald-600 flex items-center gap-1 font-medium"><TrendingUp size={14} /> {t.admin.fin_type_income}</span>
+                                    ) : (
+                                        <span className="text-red-600 flex items-center gap-1 font-medium"><TrendingDown size={14} /> {t.admin.fin_type_expense}</span>
+                                    )}
+                                </td>
+                                <td className={`px-6 py-4 text-right font-bold ${item.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                    {item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    {item.type === 'expense' && (
+                                        <button onClick={() => onDeleteExpense(item.id)} className="text-slate-400 hover:text-red-600 p-1">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </td>
+                                </tr>
+                            ))
+                         ) : (
+                             <tr>
+                                 <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                                     No transactions found for the selected filters.
+                                 </td>
+                             </tr>
+                         )}
+                      </tbody>
+                   </table>
+                </div>
+                <Pagination 
+                   currentPage={financePage}
+                   totalPages={financeTotalPages}
+                   onPageChange={setFinancePage}
+                   t={t}
+                />
+             </div>
+          </div>
+        )}
+
+        {/* FLEET MANAGEMENT TAB */}
+        {activeTab === 'fleet' && (
+          <div className="rounded-xl border border-slate-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 p-6">
+              <h3 className="text-lg font-bold text-slate-900">{t.admin.fleet_status}</h3>
+              <button onClick={handleStartAdd} className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                <Plus size={16} /> {t.admin.add_vehicle}
+              </button>
+            </div>
+            
+            {(isEditingVehicle || isAddingVehicle) && (
+              <div className="border-b border-slate-100 bg-slate-50 p-6">
+                 <form onSubmit={handleVehicleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <input name="make" defaultValue={isEditingVehicle?.make} placeholder="Make" required className="rounded-md border-slate-300 p-2 text-sm" />
+                    <input name="model" defaultValue={isEditingVehicle?.model} placeholder="Model" required className="rounded-md border-slate-300 p-2 text-sm" />
+                    <input name="year" type="number" defaultValue={isEditingVehicle?.year} placeholder="Year" required className="rounded-md border-slate-300 p-2 text-sm" />
+                    <input name="plate" defaultValue={isEditingVehicle?.plate} placeholder="Plate (ST-XX-XX)" className="rounded-md border-slate-300 p-2 text-sm" />
+                    
+                    <select name="category" defaultValue={isEditingVehicle?.category || 'economy'} className="rounded-md border-slate-300 p-2 text-sm">
+                       {vehicleCategories.map(cat => (
+                           <option key={cat.id} value={cat.id}>{cat.name}</option>
+                       ))}
+                    </select>
+                    <select name="transmission" defaultValue={isEditingVehicle?.transmission || 'manual'} className="rounded-md border-slate-300 p-2 text-sm">
+                       <option value="manual">Manual</option>
+                       <option value="automatic">Automatic</option>
+                    </select>
+                    <input name="seats" type="number" defaultValue={isEditingVehicle?.seats || 5} placeholder="Seats" required className="rounded-md border-slate-300 p-2 text-sm" />
+                    <input name="pricePerDay" type="number" defaultValue={isEditingVehicle?.pricePerDay} placeholder="Price/Day" required className="rounded-md border-slate-300 p-2 text-sm" />
+                    
+                    <select name="status" defaultValue={isEditingVehicle?.status || 'available'} className="rounded-md border-slate-300 p-2 text-sm">
+                       <option value="available">Available</option>
+                       <option value="maintenance">Maintenance</option>
+                       <option value="rented">Rented</option>
+                    </select>
+
+                    {/* Image Upload */}
+                    <div className="sm:col-span-2 lg:col-span-4 border-t border-slate-200 pt-4 mt-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Vehicle Image</label>
+                        <div className="flex items-center gap-4">
+                            <div className="relative h-24 w-40 overflow-hidden rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0">
+                                {vehicleImage ? (
+                                    <img src={vehicleImage} alt="Preview" className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                        <Car size={24} />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <label className="block">
+                                  <span className="sr-only">Choose profile photo</span>
+                                  <input 
+                                      type="file" 
+                                      accept="image/*"
+                                      onChange={handleImageUpload}
+                                      className="block w-full text-sm text-slate-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-xs file:font-semibold
+                                        file:bg-slate-900 file:text-white
+                                        hover:file:bg-slate-800
+                                        cursor-pointer
+                                      "
+                                  />
+                                </label>
+                                <p className="mt-1 text-xs text-slate-500">Supported formats: JPG, PNG. Recommended size: 400x250px</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end mt-2">
+                        <button type="button" onClick={() => { setIsEditingVehicle(null); setIsAddingVehicle(false); }} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">{t.admin.cancel}</button>
+                        <button type="submit" className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-500">{t.admin.save}</button>
+                    </div>
+                 </form>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4">Vehicle</th>
+                    <th className="px-6 py-4">{t.admin.plate}</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">{t.admin.price}</th>
+                    <th className="px-6 py-4">{t.admin.status}</th>
+                    <th className="px-6 py-4 text-right">{t.admin.actions}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentVehicles.map((v) => {
+                    const catName = vehicleCategories.find(c => c.id === v.category)?.name || v.category;
+                    return (
+                    <tr key={v.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 font-medium text-slate-900">
+                        <div className="flex items-center gap-3">
+                           <img src={v.image} alt="" className="w-10 h-10 rounded object-cover bg-slate-100" />
+                           {v.make} {v.model} <span className="text-slate-400 font-normal">({v.year})</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs">{v.plate || 'N/A'}</td>
+                      <td className="px-6 py-4 capitalize">{catName}</td>
+                      <td className="px-6 py-4 font-semibold">{v.pricePerDay.toLocaleString()}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          v.status === 'available' ? 'bg-emerald-50 text-emerald-700' : 
+                          v.status === 'maintenance' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'
+                        }`}>
+                          {v.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                           <button onClick={() => handleStartEdit(v)} className="p-1 text-slate-400 hover:text-slate-600"><Edit2 size={16} /></button>
+                           <button 
+                             onClick={() => {
+                                if (window.confirm(t.admin.confirm_delete)) {
+                                    onDeleteVehicle(v.id);
+                                    notify('info', 'Vehicle deleted');
+                                }
+                             }} 
+                             className="p-1 text-slate-400 hover:text-red-600"
+                             title={t.admin.delete}
+                           >
+                              <Trash2 size={16} />
+                           </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )})}
+                </tbody>
+              </table>
+            </div>
+            <Pagination 
+                currentPage={fleetPage}
+                totalPages={fleetTotalPages}
+                onPageChange={setFleetPage}
+                t={t}
+            />
+          </div>
+        )}
+
+        {/* RESERVATIONS TAB */}
+        {activeTab === 'reservations' && (
+           <div className="rounded-xl border border-slate-100 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 p-6">
+                <h3 className="text-lg font-bold text-slate-900">{t.admin.tabs_reservations}</h3>
+              </div>
+              <div className="overflow-x-auto">
+                 <table className="w-full text-left text-sm text-slate-600">
+                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                       <tr>
+                          <th className="px-6 py-4">ID</th>
+                          <th className="px-6 py-4">Customer</th>
+                          <th className="px-6 py-4">Vehicle</th>
+                          <th className="px-6 py-4">Dates</th>
+                          <th className="px-6 py-4">Pickup</th>
+                          <th className="px-6 py-4">Status</th>
+                          <th className="px-6 py-4">{t.admin.payment_status}</th>
+                          <th className="px-6 py-4 text-right">Actions</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                       {currentReservations.map(res => (
+                          <tr key={res.id} className="hover:bg-slate-50">
+                             <td className="px-6 py-4 font-mono text-xs">{res.id}</td>
+                             <td className="px-6 py-4 font-medium text-slate-900">{res.customerName}</td>
+                             <td className="px-6 py-4 text-xs">{getVehicleName(res.vehicleId)}</td>
+                             <td className="px-6 py-4 text-xs">{res.startDate} <br/> {res.endDate}</td>
+                             <td className="px-6 py-4">
+                                <span className="capitalize">{res.pickupType}</span>
+                                {res.pickupAddress && <div className="text-xs text-slate-400 max-w-[150px] truncate" title={res.pickupAddress}>{res.pickupAddress}</div>}
+                             </td>
+                             <td className="px-6 py-4">
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                   res.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' :
+                                   res.status === 'completed' ? 'bg-blue-50 text-blue-700' :
+                                   res.status === 'active' ? 'bg-purple-50 text-purple-700' :
+                                   res.status === 'cancelled' ? 'bg-red-50 text-red-700' :
+                                   'bg-amber-50 text-amber-700'
+                                }`}>
+                                   {res.status}
+                                </span>
+                             </td>
+                             <td className="px-6 py-4">
+                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                    res.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700' :
+                                    res.paymentStatus === 'refunded' ? 'bg-slate-100 text-slate-600' :
+                                    'bg-amber-50 text-amber-700'
+                                }`}>
+                                   {res.paymentStatus === 'paid' ? t.admin.paid : t.admin.pending_payment}
+                                </span>
+                             </td>
+                             <td className="px-6 py-4 text-right">
+                                <div className="flex justify-end gap-2">
+                                   {res.status === 'pending' && (
+                                     <button onClick={() => onUpdateReservationStatus(res.id, 'confirmed')} className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded hover:bg-emerald-200">
+                                       {t.admin.confirm}
+                                     </button>
+                                   )}
+                                   {res.status === 'confirmed' && (
+                                     <button onClick={() => onUpdateReservationStatus(res.id, 'active')} className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded hover:bg-purple-200">
+                                       {t.admin.mark_active}
+                                     </button>
+                                   )}
+                                   {res.status === 'active' && (
+                                     <button onClick={() => onUpdateReservationStatus(res.id, 'completed')} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">
+                                       {t.admin.mark_completed}
+                                     </button>
+                                   )}
+                                   {res.status !== 'completed' && res.status !== 'cancelled' && (
+                                     <button onClick={() => onUpdateReservationStatus(res.id, 'cancelled')} className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">
+                                       {t.admin.mark_cancelled}
+                                     </button>
+                                   )}
+                                </div>
+                             </td>
+                          </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
+              <Pagination 
+                currentPage={reservationPage}
+                totalPages={reservationTotalPages}
+                onPageChange={setReservationPage}
+                t={t}
+              />
+           </div>
+        )}
+
+        {/* DELIVERIES TAB */}
+        {activeTab === 'deliveries' && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+             {deliveryReservations.length === 0 ? (
+               <div className="col-span-full p-12 text-center bg-white rounded-xl border border-slate-100">
+                 <Truck className="mx-auto h-12 w-12 text-slate-300" />
+                 <h3 className="mt-2 text-sm font-semibold text-slate-900">No pending deliveries</h3>
+               </div>
+             ) : (
+               deliveryReservations.map(res => (
+                 <div key={res.id} className="relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-start justify-between">
+                       <div className="rounded-full bg-red-50 p-3 text-red-600">
+                          <Truck size={20} />
+                       </div>
+                       <span className={`rounded-full px-2 py-1 text-xs font-medium ${res.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {res.status}
+                       </span>
+                    </div>
+                    <div className="mt-4">
+                       <h3 className="font-bold text-slate-900">{res.customerName}</h3>
+                       <p className="text-sm text-slate-500">{getVehicleName(res.vehicleId)}</p>
+                    </div>
+                    <div className="mt-4 flex items-start gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
+                       <MapPin size={16} className="mt-0.5 shrink-0" />
+                       {res.pickupAddress}
+                    </div>
+                    <div className="mt-2 flex justify-between text-xs text-slate-400">
+                       <span>{res.startDate}</span>
+                       <span>{res.endDate}</span>
+                    </div>
+                    
+                    <div className="mt-6 flex gap-2">
+                       {res.status === 'pending' && (
+                         <button onClick={() => { onUpdateReservationStatus(res.id, 'confirmed'); notify('success', 'Order confirmed'); }} className="flex-1 rounded-lg bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                            Confirm Order
+                         </button>
+                       )}
+                       {res.status === 'confirmed' && (
+                         <button onClick={() => { onUpdateReservationStatus(res.id, 'active'); notify('success', 'Driver dispatched'); }} className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white hover:bg-red-500">
+                            Dispatch Driver
+                         </button>
+                       )}
+                    </div>
+                 </div>
+               ))
+             )}
+          </div>
+        )}
+
+        {/* REVIEWS TAB */}
+        {activeTab === 'reviews' && (
+          <div className="rounded-xl border border-slate-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 p-6">
+              <h3 className="text-lg font-bold text-slate-900">{t.admin.reviews_moderation}</h3>
+              
+              <div className="flex rounded-md bg-slate-100 p-1">
+                <button 
+                  onClick={() => { setReviewFilter('pending'); setReviewPage(1); }}
+                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+                    reviewFilter === 'pending' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {t.admin.filter_pending}
+                </button>
+                <button 
+                  onClick={() => { setReviewFilter('all'); setReviewPage(1); }}
+                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+                    reviewFilter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {t.admin.filter_all}
+                </button>
+              </div>
+            </div>
+            
+            {filteredReviews.length === 0 ? (
+              <div className="p-12 text-center">
+                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-4">
+                    <Check size={24} />
+                 </div>
+                 <h3 className="text-sm font-semibold text-slate-900">All caught up!</h3>
+                 <p className="mt-1 text-sm text-slate-500">No {reviewFilter} reviews found.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-600">
+                  <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Customer / Vehicle</th>
+                      <th className="px-6 py-4 font-medium">Rating</th>
+                      <th className="px-6 py-4 font-medium">Comment</th>
+                      <th className="px-6 py-4 font-medium">Date</th>
+                      <th className="px-6 py-4 font-medium">{t.admin.status}</th>
+                      <th className="px-6 py-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {currentReviews.map((review) => (
+                      <tr key={review.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-slate-900">{review.customerName}</p>
+                          <p className="text-xs text-slate-500">{getVehicleName(review.vehicleId)}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <StarRating rating={review.rating} size={14} />
+                        </td>
+                        <td className="px-6 py-4 max-w-xs truncate" title={review.comment}>
+                          {review.comment}
+                        </td>
+                        <td className="px-6 py-4">{review.date}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            review.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 
+                            review.status === 'rejected' ? 'bg-red-50 text-red-700' : 
+                            'bg-amber-50 text-amber-700'
+                          }`}>
+                            {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {review.status === 'pending' && (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => { onReviewAction(review.id, 'approved'); notify('success', 'Review approved'); }}
+                                className="rounded p-1 text-emerald-600 hover:bg-emerald-50"
+                                title={t.admin.approve}
+                              >
+                                <Check size={18} />
+                              </button>
+                              <button 
+                                onClick={() => { onReviewAction(review.id, 'rejected'); notify('info', 'Review rejected'); }}
+                                className="rounded p-1 text-red-600 hover:bg-red-50"
+                                title={t.admin.reject}
+                              >
+                                <XIcon size={18} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+             <Pagination 
+                currentPage={reviewPage}
+                totalPages={reviewTotalPages}
+                onPageChange={setReviewPage}
+                t={t}
+            />
+          </div>
+        )}
+
+        {/* TOURS TAB */}
+        {activeTab === 'tours' && (
+          <div className="rounded-xl border border-slate-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 p-6">
+              <h3 className="text-lg font-bold text-slate-900">{t.admin.tabs_tours}</h3>
+              <button onClick={handleStartAddTour} className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                <Plus size={16} /> {t.admin.add_tour}
+              </button>
+            </div>
+            
+            {(isEditingTour || isAddingTour) && (
+              <div className="border-b border-slate-100 bg-slate-50 p-6">
+                 <form onSubmit={handleTourSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.admin.tour_title}</label>
+                        <input name="title" defaultValue={isEditingTour?.title} required className="w-full rounded-md border-slate-300 p-2 text-sm border" />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.tours.duration}</label>
+                        <input name="duration" defaultValue={isEditingTour?.duration} required className="w-full rounded-md border-slate-300 p-2 text-sm border" placeholder="e.g. 4 Hours" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.admin.tour_price}</label>
+                        <input name="price" type="number" defaultValue={isEditingTour?.price} required className="w-full rounded-md border-slate-300 p-2 text-sm border" />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t.admin.tour_features} <span className="text-xs text-slate-500">({t.admin.tour_features_help})</span></label>
+                        <input name="features" defaultValue={isEditingTour?.features.join(', ')} required className="w-full rounded-md border-slate-300 p-2 text-sm border" />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea name="description" rows={3} defaultValue={isEditingTour?.description} required className="w-full rounded-md border-slate-300 p-2 text-sm border" />
+                    </div>
+
+                    {/* Image Upload */}
+                    <div className="sm:col-span-2 border-t border-slate-200 pt-4 mt-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Tour Image</label>
+                        <div className="flex items-center gap-4">
+                            <div className="relative h-24 w-40 overflow-hidden rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0">
+                                {tourImage ? (
+                                    <img src={tourImage} alt="Preview" className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                        <Map size={24} />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <label className="block">
+                                  <span className="sr-only">Choose photo</span>
+                                  <input 
+                                      type="file" 
+                                      accept="image/*"
+                                      onChange={handleTourImageUpload}
+                                      className="block w-full text-sm text-slate-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-xs file:font-semibold
+                                        file:bg-slate-900 file:text-white
+                                        hover:file:bg-slate-800
+                                        cursor-pointer
+                                      "
+                                  />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="sm:col-span-2 flex gap-2 justify-end mt-2">
+                        <button type="button" onClick={() => { setIsEditingTour(null); setIsAddingTour(false); }} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">{t.admin.cancel}</button>
+                        <button type="submit" className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-500">{t.admin.save}</button>
+                    </div>
+                 </form>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4">Tour</th>
+                    <th className="px-6 py-4">{t.tours.duration}</th>
+                    <th className="px-6 py-4">{t.admin.tour_price}</th>
+                    <th className="px-6 py-4 text-right">{t.admin.actions}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentTours.map((tour) => (
+                    <tr key={tour.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4 font-medium text-slate-900">
+                        <div className="flex items-center gap-3">
+                           <img src={tour.image} alt="" className="w-10 h-10 rounded object-cover bg-slate-100" />
+                           <span className="font-semibold">{tour.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">{tour.duration}</td>
+                      <td className="px-6 py-4 font-semibold">{tour.price.toLocaleString()} CVE</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                           <button onClick={() => handleStartEditTour(tour)} className="p-1 text-slate-400 hover:text-slate-600"><Edit2 size={16} /></button>
+                           <button 
+                             onClick={() => {
+                                if (window.confirm(t.admin.confirm_delete)) {
+                                    onDeleteTour(tour.id);
+                                    notify('info', 'Tour deleted');
+                                }
+                             }} 
+                             className="p-1 text-slate-400 hover:text-red-600"
+                             title={t.admin.delete}
+                           >
+                              <Trash2 size={16} />
+                           </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination 
+                currentPage={tourPage}
+                totalPages={tourTotalPages}
+                onPageChange={setTourPage}
+                t={t}
+            />
+          </div>
+        )}
+
+        {/* SETTINGS TAB */}
+        {activeTab === 'settings' && (
+          <div className="rounded-xl border border-slate-100 bg-white shadow-sm max-w-2xl mx-auto">
+             <div className="flex items-center justify-between border-b border-slate-100 p-6">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                   <Settings className="text-slate-500" size={20} />
+                   {t.admin.tabs_settings}
+                </h3>
+             </div>
+
+             {/* Settings Sub-Navigation */}
+             <div className="flex border-b border-slate-100 px-6 overflow-x-auto">
+                <button
+                   onClick={() => setSettingsSubTab('general')}
+                   className={`mr-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      settingsSubTab === 'general' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+                   }`}
+                >
+                   {t.admin.settings_general}
+                </button>
+                <button
+                   onClick={() => setSettingsSubTab('categories')}
+                   className={`mr-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      settingsSubTab === 'categories' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+                   }`}
+                >
+                   {t.admin.settings_categories}
+                </button>
+                <button
+                   onClick={() => setSettingsSubTab('integrations')}
+                   className={`mr-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      settingsSubTab === 'integrations' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+                   }`}
+                >
+                   {t.admin.settings_integrations}
+                </button>
+                <button
+                   onClick={() => setSettingsSubTab('payments')}
+                   className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                      settingsSubTab === 'payments' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-900'
+                   }`}
+                >
+                   {t.admin.settings_payments}
+                </button>
+             </div>
+             
+             <div className="p-6">
+                <form onSubmit={handleSaveSettings} className="space-y-8">
+                   
+                   {/* GENERAL SETTINGS */}
+                   {settingsSubTab === 'general' && (
+                     <div className="animate-in fade-in">
+                        <div className="grid gap-6">
+                           <div>
+                              <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                  <Briefcase size={16} className="text-slate-600" />
+                                  Company Information
+                              </h4>
+                              <div className="space-y-4">
+                                 <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">{t.admin.comp_name}</label>
+                                    <input 
+                                       type="text" 
+                                       value={compName}
+                                       onChange={(e) => setCompName(e.target.value)}
+                                       className="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2.5 border px-3"
+                                    />
+                                 </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                       <label className="block text-sm font-medium text-slate-700 mb-2">{t.admin.comp_email}</label>
+                                       <input 
+                                          type="email" 
+                                          value={compEmail}
+                                          onChange={(e) => setCompEmail(e.target.value)}
+                                          className="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2.5 border px-3"
+                                       />
+                                    </div>
+                                    <div>
+                                       <label className="block text-sm font-medium text-slate-700 mb-2">{t.admin.comp_phone}</label>
+                                       <input 
+                                          type="text" 
+                                          value={compPhone}
+                                          onChange={(e) => setCompPhone(e.target.value)}
+                                          className="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2.5 border px-3"
+                                       />
+                                    </div>
+                                 </div>
+                                 <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">{t.admin.comp_address}</label>
+                                    <input 
+                                       type="text" 
+                                       value={compAddress}
+                                       onChange={(e) => setCompAddress(e.target.value)}
+                                       className="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2.5 border px-3"
+                                    />
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                        <div className="pt-6 border-t border-slate-100 flex items-center justify-end">
+                            <button 
+                                type="submit"
+                                className="inline-flex justify-center rounded-lg border border-transparent bg-slate-900 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            >
+                                {t.admin.save_settings}
+                            </button>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* CATEGORIES SETTINGS */}
+                   {settingsSubTab === 'categories' && (
+                       <div className="animate-in fade-in space-y-8">
+                           {/* Add New Category */}
+                           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                               <h4 className="text-sm font-semibold text-slate-900 mb-3">{t.admin.cat_add}</h4>
+                               <div className="flex gap-2 items-end">
+                                   <div className="flex-1">
+                                       <label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.cat_name}</label>
+                                       <input 
+                                           type="text"
+                                           value={newCatName}
+                                           onChange={(e) => setNewCatName(e.target.value)}
+                                           className="block w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 border px-3"
+                                           placeholder="e.g. Convertible"
+                                       />
+                                   </div>
+                                   <div>
+                                       <label className="block text-xs font-medium text-slate-500 mb-1">Type</label>
+                                       <select 
+                                           value={newCatType}
+                                           onChange={(e) => setNewCatType(e.target.value as any)}
+                                           className="block w-32 rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2 border px-2"
+                                       >
+                                           <option value="vehicle">Vehicle</option>
+                                           <option value="expense">Expense</option>
+                                       </select>
+                                   </div>
+                                   <button 
+                                       type="button"
+                                       onClick={handleSubmitCategory}
+                                       className="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-800"
+                                   >
+                                       {t.admin.cat_add_btn}
+                                   </button>
+                               </div>
+                           </div>
+
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                               {/* Vehicle Categories List */}
+                               <div>
+                                   <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                       <Car size={16} /> {t.admin.cat_vehicle}
+                                   </h4>
+                                   <ul className="space-y-2">
+                                       {vehicleCategories.map(cat => (
+                                           <li key={cat.id} className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-md shadow-sm group">
+                                               <span className="text-sm font-medium text-slate-700">{cat.name}</span>
+                                               <button 
+                                                   type="button"
+                                                   onClick={() => onDeleteCategory(cat.id, 'vehicle')}
+                                                   className="text-slate-300 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                               >
+                                                   <Trash2 size={14} />
+                                               </button>
+                                           </li>
+                                       ))}
+                                   </ul>
+                               </div>
+
+                               {/* Expense Categories List */}
+                               <div>
+                                   <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                       <Tag size={16} /> {t.admin.cat_expense}
+                                   </h4>
+                                   <ul className="space-y-2">
+                                       {expenseCategories.map(cat => (
+                                           <li key={cat.id} className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-md shadow-sm group">
+                                               <span className="text-sm font-medium text-slate-700">{cat.name}</span>
+                                               <button 
+                                                   type="button"
+                                                   onClick={() => onDeleteCategory(cat.id, 'expense')}
+                                                   className="text-slate-300 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                               >
+                                                   <Trash2 size={14} />
+                                               </button>
+                                           </li>
+                                       ))}
+                                   </ul>
+                               </div>
+                           </div>
+                       </div>
+                   )}
+
+                   {/* INTEGRATIONS SETTINGS (General API) */}
+                   {settingsSubTab === 'integrations' && (
+                     <div className="animate-in fade-in space-y-8">
+                       {/* API Key Section */}
+                       <div>
+                          <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                              <Key size={16} className="text-red-600" />
+                              General API Settings
+                          </h4>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                             {t.admin.api_key_label}
+                          </label>
+                          <div className="relative">
+                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Key className="text-slate-400" size={18} />
+                             </div>
+                             <input 
+                                type="text" 
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                className="block w-full pl-10 rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm py-2.5 border"
+                                placeholder={t.admin.api_key_placeholder}
+                             />
+                          </div>
+                       </div>
+                       <div className="pt-6 border-t border-slate-100 flex items-center justify-end">
+                            <button 
+                                type="submit"
+                                className="inline-flex justify-center rounded-lg border border-transparent bg-slate-900 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            >
+                                {t.admin.save_settings}
+                            </button>
+                        </div>
+                     </div>
+                   )}
+
+                   {/* PAYMENTS SETTINGS (Vinti4, Stripe, PayPal) */}
+                   {settingsSubTab === 'payments' && (
+                     <div className="animate-in fade-in space-y-8">
+                       {/* Vinti4 Section */}
+                       <div>
+                          <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                              <CreditCard size={16} className="text-emerald-600" />
+                              {t.admin.vinti4_section}
+                          </h4>
+                          
+                          <div className="grid gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    {t.admin.vinti4_pos_id}
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={vinti4PosId}
+                                    onChange={(e) => setVinti4PosId(e.target.value)}
+                                    className="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2.5 border px-3"
+                                    placeholder="123456"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    {t.admin.vinti4_api_key}
+                                </label>
+                                <input 
+                                    type="password" 
+                                    value={vinti4ApiKey}
+                                    onChange={(e) => setVinti4ApiKey(e.target.value)}
+                                    className="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm py-2.5 border px-3"
+                                    placeholder="******************"
+                                />
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3">
+                             <a 
+                               href="https://www.vinti4.cv/web.aspx" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                             >
+                                {t.admin.vinti4_doc_link}
+                                <ExternalLink size={12} />
+                             </a>
+                          </div>
+                       </div>
+
+                       {/* Stripe & PayPal Section */}
+                       <div className="pt-6 border-t border-slate-100 grid gap-6">
+                          <div>
+                            <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                <CreditCard size={16} className="text-purple-600" />
+                                {t.admin.stripe_section}
+                            </h4>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                {t.admin.stripe_key}
+                            </label>
+                            <input 
+                                type="text" 
+                                value={stripeKey}
+                                onChange={(e) => setStripeKey(e.target.value)}
+                                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm py-2.5 border px-3"
+                                placeholder="pk_test_..."
+                            />
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                <CreditCard size={16} className="text-blue-600" />
+                                {t.admin.paypal_section}
+                            </h4>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                {t.admin.paypal_client}
+                            </label>
+                            <input 
+                                type="text" 
+                                value={paypalClient}
+                                onChange={(e) => setPaypalClient(e.target.value)}
+                                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2.5 border px-3"
+                                placeholder="Client ID"
+                            />
+                          </div>
+                       </div>
+
+                       <div className="pt-6 border-t border-slate-100 flex items-center justify-end">
+                            <button 
+                                type="submit"
+                                className="inline-flex justify-center rounded-lg border border-transparent bg-slate-900 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            >
+                                {t.admin.save_settings}
+                            </button>
+                        </div>
+                     </div>
+                   )}
+                </form>
+             </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

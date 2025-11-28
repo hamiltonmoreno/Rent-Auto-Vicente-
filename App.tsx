@@ -265,6 +265,7 @@ function AppContent() { // Extracted inner component to use Notification Hook if
   };
 
   const handleUpdateReservationStatus = (id: string, status: ReservationStatus) => {
+    // 1. Update the Reservation Status
     setReservations(prevReservations => {
         return prevReservations.map(r => {
             if (r.id !== id) return r;
@@ -272,13 +273,9 @@ function AppContent() { // Extracted inner component to use Notification Hook if
             // Logic for "Check-out" (Active) - Calculating remaining payment
             if (status === 'active' && r.paymentStatus === 'paid' && r.paidAmount && r.paidAmount < r.total) {
                 // If moving to active, assume customer pays the rest at counter
+                const remaining = r.total - r.paidAmount;
+                // We could trigger a "Payment Received" expense log here or update paidAmount
                 return { ...r, status, paidAmount: r.total }; // Mark fully paid
-            }
-
-            // Logic for Cancellation and Refunds
-            if (status === 'cancelled' && r.paymentStatus === 'paid') {
-               // Mark as refunded to keep accounting clean
-               return { ...r, status, paymentStatus: 'refunded' };
             }
 
             return { ...r, status };
