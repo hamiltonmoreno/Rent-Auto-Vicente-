@@ -1,9 +1,9 @@
-
-import React, { useState } from 'react';
-import { Plus, Car, Edit2, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Edit2, Trash2, Search, Tag } from 'lucide-react';
 import { Translation, Vehicle, CategoryItem } from '../types';
 import { Pagination } from './Pagination';
 import { useNotification } from './NotificationSystem';
+import { VehicleForm } from './VehicleForm';
 
 const ITEMS_PER_PAGE = 8;
 const STATUS_COLORS = {
@@ -36,117 +36,190 @@ export const AdminFleetTab: React.FC<AdminFleetTabProps> = ({
   const [page, setPage] = useState(1);
   const [isEditing, setIsEditing] = useState<Vehicle | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [vehicleImage, setVehicleImage] = useState<string>('');
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [usageFilter, setUsageFilter] = useState('all');
 
-  const totalPages = Math.ceil(vehicles.length / ITEMS_PER_PAGE);
-  const currentVehicles = vehicles.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const filteredVehicles = useMemo(() => {
+      return vehicles.filter(v => {
+          const term = searchTerm.toLowerCase();
+          const matchesSearch = 
+            v.model.toLowerCase().includes(term) ||
+            v.make.toLowerCase().includes(term) ||
+            (v.plate && v.plate.toLowerCase().includes(term));
+          
+          if (!matchesSearch) return false;
+          if (categoryFilter !== 'all' && v.category !== categoryFilter) return false;
+          if (statusFilter !== 'all' && v.status !== statusFilter) return false;
+          if (usageFilter !== 'all' && v.usageType !== usageFilter) return false;
+
+          return true;
+      });
+  }, [vehicles, searchTerm, statusFilter, categoryFilter, usageFilter]);
+
+  const totalPages = Math.ceil(filteredVehicles.length / ITEMS_PER_PAGE);
+  const currentVehicles = filteredVehicles.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const handleStartAdd = () => {
-    setVehicleImage('');
     setIsEditing(null);
     setIsAdding(true);
   };
 
   const handleStartEdit = (v: Vehicle) => {
-    setVehicleImage(v.image);
     setIsAdding(false);
     setIsEditing(v);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setVehicleImage(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const vehicleData: any = {
-      make: formData.get('make'),
-      model: formData.get('model'),
-      year: Number(formData.get('year')),
-      plate: formData.get('plate'),
-      category: formData.get('category'),
-      transmission: formData.get('transmission'),
-      seats: Number(formData.get('seats')),
-      pricePerDay: Number(formData.get('pricePerDay')),
-      status: formData.get('status'),
-      available: formData.get('status') === 'available',
-      id: isEditing ? isEditing.id : Date.now().toString(),
-      image: vehicleImage || (isEditing ? isEditing.image : 'https://picsum.photos/400/250'),
-      rating: isEditing ? isEditing.rating : 5,
-      reviewCount: isEditing ? isEditing.reviewCount : 0,
-    };
-
+  const handleFormSubmit = (vehicleData: Vehicle) => {
     if (isEditing) {
       onUpdateVehicle(vehicleData);
-      notify('success', 'Vehicle updated');
+      notify('success', 'Vehicle updated successfully');
     } else {
       onAddVehicle(vehicleData);
-      notify('success', 'Vehicle added');
+      notify('success', 'Vehicle added to fleet');
     }
     setIsEditing(null);
     setIsAdding(false);
-    setVehicleImage('');
+  };
+
+  const handleCancelForm = () => {
+    setIsEditing(null);
+    setIsAdding(false);
   };
 
   return (
     <div className="rounded-xl border border-slate-100 bg-white shadow-sm animate-in fade-in">
-      <div className="flex items-center justify-between border-b border-slate-100 p-6">
-        <h3 className="text-lg font-bold text-slate-900">{t.admin.fleet_status}</h3>
-        <button onClick={handleStartAdd} className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
-          <Plus size={16} /> {t.admin.add_vehicle}
-        </button>
+      {/* Header & Filters */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between border-b border-slate-100 p-6 gap-4 bg-white rounded-t-xl sticky top-0 z-10">
+        <div>
+            <h3 className="text-lg font-bold text-slate-900">{t.admin.fleet_status}</h3>
+            <p className="text-sm text-slate-500">Manage your entire fleet (Rentals & Taxis)</p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full xl:w-auto">
+            {/* Search */}
+            <div className="relative flex-1 w-full sm:w-auto min-w-[200px]">
+                <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+                <input 
+                    type="text" 
+                    placeholder={t.admin.search_placeholder_fleet} 
+                    value={searchTerm}
+                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-full focus:border-red-500 focus:ring-red-500 transition-all"
+                />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                {/* Usage Filter */}
+                <select 
+                    value={usageFilter}
+                    onChange={(e) => { setUsageFilter(e.target.value); setPage(1); }}
+                    className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 font-medium text-slate-700 cursor-pointer hover:border-slate-300 transition-colors"
+                >
+                    <option value="all">All Usage</option>
+                    <option value="rental">Rental Only</option>
+                    <option value="taxi">Taxi Only</option>
+                    <option value="both">Rental & Taxi</option>
+                </select>
+
+                {/* Category Filter */}
+                <select 
+                    value={categoryFilter}
+                    onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+                    className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 text-slate-600 cursor-pointer hover:border-slate-300"
+                >
+                    <option value="all">{t.filters.all}</option>
+                    {vehicleCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
+                </select>
+
+                {/* Status Filter */}
+                <select 
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                    className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 text-slate-600 cursor-pointer hover:border-slate-300"
+                >
+                    <option value="all">Any Status</option>
+                    <option value="available">Available</option>
+                    <option value="rented">Rented</option>
+                    <option value="maintenance">Maintenance</option>
+                </select>
+            </div>
+
+            <button onClick={handleStartAdd} className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2 text-sm font-bold text-white hover:bg-red-700 shadow-md shadow-red-100 transition-all active:scale-95">
+                <Plus size={18} /> {t.admin.add_vehicle}
+            </button>
+        </div>
       </div>
       
+      {/* Add/Edit Form - REFACTORED to use VehicleForm */}
       {(isEditing || isAdding) && (
-        <div className="border-b border-slate-100 bg-slate-50 p-6">
-           <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <input name="make" defaultValue={isEditing?.make} placeholder="Make" required className="rounded-md border-slate-300 p-2 text-sm" />
-              <input name="model" defaultValue={isEditing?.model} placeholder="Model" required className="rounded-md border-slate-300 p-2 text-sm" />
-              <input name="year" type="number" defaultValue={isEditing?.year} placeholder="Year" required className="rounded-md border-slate-300 p-2 text-sm" />
-              <input name="plate" defaultValue={isEditing?.plate} placeholder="Plate" className="rounded-md border-slate-300 p-2 text-sm" />
-              <select name="category" defaultValue={isEditing?.category || 'economy'} className="rounded-md border-slate-300 p-2 text-sm">{vehicleCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select>
-              <select name="transmission" defaultValue={isEditing?.transmission || 'manual'} className="rounded-md border-slate-300 p-2 text-sm"><option value="manual">Manual</option><option value="automatic">Automatic</option></select>
-              <input name="seats" type="number" defaultValue={isEditing?.seats || 5} placeholder="Seats" required className="rounded-md border-slate-300 p-2 text-sm" />
-              <input name="pricePerDay" type="number" defaultValue={isEditing?.pricePerDay} placeholder="Price" required className="rounded-md border-slate-300 p-2 text-sm" />
-              <select name="status" defaultValue={isEditing?.status || 'available'} className="rounded-md border-slate-300 p-2 text-sm"><option value="available">Available</option><option value="maintenance">Maintenance</option></select>
-              
-              <div className="sm:col-span-2 lg:col-span-4 border-t border-slate-200 pt-4 mt-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Image</label>
-                  <div className="flex items-center gap-4">
-                      <div className="relative h-24 w-40 overflow-hidden rounded-lg bg-slate-100 border border-slate-200 flex-shrink-0">
-                          {vehicleImage ? (<img src={vehicleImage} alt="Preview" className="h-full w-full object-cover" />) : (<div className="flex h-full w-full items-center justify-center text-slate-400"><Car size={24} /></div>)}
-                      </div>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer"/>
-                  </div>
-              </div>
-              <div className="sm:col-span-2 lg:col-span-4 flex gap-2 justify-end mt-2"><button type="button" onClick={() => { setIsEditing(null); setIsAdding(false); }} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">{t.admin.cancel}</button><button type="submit" className="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-500">{t.admin.save}</button></div>
-           </form>
-        </div>
+        <VehicleForm 
+            t={t}
+            initialData={isEditing}
+            vehicleCategories={vehicleCategories}
+            onSubmit={handleFormSubmit}
+            onCancel={handleCancelForm}
+        />
       )}
 
+      {/* Fleet Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm text-slate-600">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-6 py-4">Vehicle</th><th className="px-6 py-4">{t.admin.plate}</th><th className="px-6 py-4">Category</th><th className="px-6 py-4">{t.admin.price}</th><th className="px-6 py-4">{t.admin.status}</th><th className="px-6 py-4 text-right">{t.admin.actions}</th></tr></thead>
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-semibold">
+              <tr>
+                  <th className="px-6 py-4">Vehicle</th>
+                  <th className="px-6 py-4">{t.admin.plate}</th>
+                  <th className="px-6 py-4">Usage Type</th>
+                  <th className="px-6 py-4">{t.admin.price}</th>
+                  <th className="px-6 py-4 text-center">{t.admin.status}</th>
+                  <th className="px-6 py-4 text-right">{t.admin.actions}</th>
+              </tr>
+          </thead>
           <tbody className="divide-y divide-slate-100">
-            {currentVehicles.map((v) => {
-              const catName = vehicleCategories.find(c => c.id === v.category)?.name || v.category;
+            {currentVehicles.length > 0 ? currentVehicles.map((v) => {
               const smartStatus = getRealTimeVehicleStatus(v);
               return (
-              <tr key={v.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 font-medium text-slate-900"><div className="flex items-center gap-3"><img src={v.image} alt="" className="w-10 h-10 rounded object-cover bg-slate-100" />{v.make} {v.model}</div></td>
-                <td className="px-6 py-4 font-mono text-xs">{v.plate || 'N/A'}</td>
-                <td className="px-6 py-4 capitalize">{catName}</td>
-                <td className="px-6 py-4 font-semibold">{v.pricePerDay.toLocaleString()}</td>
-                <td className="px-6 py-4"><span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`} style={{ backgroundColor: `${STATUS_COLORS[smartStatus as keyof typeof STATUS_COLORS]}20`, color: STATUS_COLORS[smartStatus as keyof typeof STATUS_COLORS] }}>{smartStatus === 'cleaning' ? t.admin.fleet_status_cleaning : smartStatus}</span></td>
-                <td className="px-6 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => handleStartEdit(v)} className="p-1 text-slate-400 hover:text-slate-600"><Edit2 size={16} /></button><button onClick={() => { if (window.confirm(t.admin.confirm_delete)) { onDeleteVehicle(v.id); notify('info', 'Vehicle deleted'); }}} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16} /></button></div></td>
+              <tr key={v.id} className="hover:bg-slate-50 transition-colors group">
+                <td className="px-6 py-4 font-medium text-slate-900">
+                    <div className="flex items-center gap-4">
+                        <div className="h-10 w-16 bg-slate-100 rounded-md overflow-hidden flex-shrink-0 border border-slate-200">
+                            <img src={v.image} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <p>{v.make} {v.model}</p>
+                            <p className="text-xs text-slate-400 capitalize">{v.category}</p>
+                        </div>
+                    </div>
+                </td>
+                <td className="px-6 py-4 font-mono text-xs text-slate-500">{v.plate || 'N/A'}</td>
+                <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide border ${
+                        v.usageType === 'taxi' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
+                        v.usageType === 'both' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+                        'bg-blue-50 text-blue-700 border-blue-100'
+                    }`}>
+                       <Tag size={10} /> {v.usageType === 'both' ? 'Both' : v.usageType === 'taxi' ? 'Taxi' : 'Rental'}
+                    </span>
+                </td>
+                <td className="px-6 py-4 font-bold text-slate-700">{v.pricePerDay.toLocaleString()} CVE</td>
+                <td className="px-6 py-4 text-center">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium`} style={{ backgroundColor: `${STATUS_COLORS[smartStatus as keyof typeof STATUS_COLORS]}15`, color: STATUS_COLORS[smartStatus as keyof typeof STATUS_COLORS] }}>
+                        {smartStatus === 'cleaning' ? t.admin.fleet_status_cleaning : smartStatus}
+                    </span>
+                </td>
+                <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleStartEdit(v)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit"><Edit2 size={16} /></button>
+                        <button onClick={() => { if (window.confirm(t.admin.confirm_delete)) { onDeleteVehicle(v.id); notify('info', 'Vehicle deleted'); }}} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete"><Trash2 size={16} /></button>
+                    </div>
+                </td>
               </tr>
-            )})}
+            )}) : (
+                <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No vehicles found matching criteria.</td></tr>
+            )}
           </tbody>
         </table>
       </div>

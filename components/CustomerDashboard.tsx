@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar, CheckCircle, X, User as UserIcon, Settings, Mail, Phone, Check, MapPin } from 'lucide-react';
 import { Translation, Reservation, Review, User, Tour } from '../types';
@@ -112,14 +111,14 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
          <div className="mt-4 md:mt-0 flex bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
             <button 
                 onClick={() => setActiveTab('reservations')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'reservations' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'reservations' ? 'bg-red-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
                 <Calendar size={16} />
                 {t.customer.tabs_reservations}
             </button>
             <button 
                 onClick={() => setActiveTab('profile')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'profile' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'profile' ? 'bg-red-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
                 <UserIcon size={16} />
                 {t.customer.tabs_profile}
@@ -168,10 +167,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
                 return (
                 <div key={res.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md">
-                    <div className="p-6 sm:flex sm:items-center sm:justify-between gap-6">
+                    <div className="p-5 sm:flex sm:items-center sm:justify-between gap-6">
                         {/* Info */}
                         <div className="flex items-center gap-4">
-                            <img src={image} alt={title} className="w-24 h-16 object-cover rounded-md bg-slate-100" />
+                            <img src={image} alt={title} className="w-20 h-14 object-cover rounded-md bg-slate-100" />
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-bold text-slate-900">{title}</h3>
@@ -214,7 +213,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                             {isVehicle && isCompleted && !isReviewed && (
                                 <button 
                                     onClick={() => setReviewingId(res.id)}
-                                    className="px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                                    className="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-sm"
                                 >
                                     {t.customer.leave_review}
                                 </button>
@@ -295,7 +294,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                   <div className="pt-4 flex items-center justify-end">
                       <button
                             type="submit"
-                            className="inline-flex justify-center rounded-lg border border-transparent bg-slate-900 py-2.5 px-6 text-sm font-medium text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            className="inline-flex justify-center rounded-lg border border-transparent bg-red-600 py-2.5 px-6 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                         >
                             {t.customer.save_changes}
                         </button>

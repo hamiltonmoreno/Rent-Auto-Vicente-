@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, MapPin, Search } from 'lucide-react';
 import { Translation } from '../types';
@@ -46,11 +45,12 @@ export const Hero: React.FC<HeroProps> = ({
           </p>
         </div>
 
-        {/* Search Box */}
+        {/* Search Box - Refined Responsive Layout */}
         <div className="mt-10 sm:mx-auto sm:max-w-4xl">
-          <div className="grid gap-4 rounded-2xl bg-white p-4 shadow-xl sm:grid-cols-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 rounded-2xl bg-white p-4 shadow-xl">
             
-            <div className="relative sm:col-span-4">
+            {/* Location: Full width on mobile/tablet, 4 cols on desktop */}
+            <div className="relative md:col-span-2 lg:col-span-4">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                 <MapPin size={18} />
               </div>
@@ -63,7 +63,8 @@ export const Hero: React.FC<HeroProps> = ({
               />
             </div>
 
-            <div className="relative sm:col-span-3">
+            {/* Dates: Stack on mobile, Split row on tablet, 3 cols each on desktop */}
+            <div className="relative lg:col-span-3">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                 <Calendar size={18} />
               </div>
@@ -78,7 +79,7 @@ export const Hero: React.FC<HeroProps> = ({
               />
             </div>
 
-            <div className="relative sm:col-span-3">
+            <div className="relative lg:col-span-3">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                 <Calendar size={18} />
               </div>
@@ -93,14 +94,15 @@ export const Hero: React.FC<HeroProps> = ({
               />
             </div>
 
-            <div className="sm:col-span-2">
+            {/* Button: Full width everywhere, but constrained by column span */}
+            <div className="md:col-span-2 lg:col-span-2">
               <button 
                 onClick={onSearch}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
               >
                 <Search size={18} />
-                <span className="hidden sm:inline">Buscar</span>
-                <span className="sm:hidden">{t.hero.search_btn}</span>
+                <span className="hidden lg:inline">Buscar</span>
+                <span className="lg:hidden">{t.hero.search_btn}</span>
               </button>
             </div>
           </div>

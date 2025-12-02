@@ -2,9 +2,10 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Line, ComposedChart } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Trash2, RefreshCcw } from 'lucide-react';
-import { Translation, Expense, Reservation, CategoryItem } from '../types';
+import { Translation, Expense, Reservation, CategoryItem, TaxiDailyLog } from '../types';
 import { Pagination } from './Pagination';
 import { useNotification } from './NotificationSystem';
+import { ExpenseForm } from './ExpenseForm';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -12,6 +13,7 @@ interface AdminFinanceTabProps {
   t: Translation;
   expenses: Expense[];
   reservations: Reservation[];
+  taxiLogs: TaxiDailyLog[]; 
   expenseCategories: CategoryItem[];
   onAddExpense: (expense: Expense) => void;
   onDeleteExpense: (id: string) => void;
@@ -21,6 +23,7 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
   t,
   expenses,
   reservations,
+  taxiLogs,
   expenseCategories,
   onAddExpense,
   onDeleteExpense
@@ -32,23 +35,31 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
   const [filterType, setFilterType] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
 
-  // Chart Data
+  // Chart Data Logic
   const financialData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentYear = new Date().getFullYear();
-    const data: Record<number, { income: number; expense: number }> = {};
+    const data: Record<number, { income: number; expense: number; taxi: number }> = {};
 
     reservations.forEach(r => {
-      if (r.status === 'cancelled' || new Date(r.startDate).getFullYear() !== currentYear) return;
+      const isRevenue = r.status !== 'cancelled' || r.paymentStatus === 'refunded';
+      if (!isRevenue || new Date(r.startDate).getFullYear() !== currentYear) return;
       const month = new Date(r.startDate).getMonth();
-      if (!data[month]) data[month] = { income: 0, expense: 0 };
+      if (!data[month]) data[month] = { income: 0, expense: 0, taxi: 0 };
       data[month].income += r.total;
+    });
+
+    taxiLogs.forEach(l => {
+        if (new Date(l.date).getFullYear() !== currentYear) return;
+        const month = new Date(l.date).getMonth();
+        if (!data[month]) data[month] = { income: 0, expense: 0, taxi: 0 };
+        data[month].taxi += l.amount;
     });
 
     expenses.forEach(e => {
       if (new Date(e.date).getFullYear() !== currentYear) return;
       const month = new Date(e.date).getMonth();
-      if (!data[month]) data[month] = { income: 0, expense: 0 };
+      if (!data[month]) data[month] = { income: 0, expense: 0, taxi: 0 };
       data[month].expense += e.amount;
     });
 
@@ -56,23 +67,34 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
       name,
       income: data[index]?.income || 0,
       expense: data[index]?.expense || 0,
-      profit: (data[index]?.income || 0) - (data[index]?.expense || 0)
+      profit: ((data[index]?.income || 0) + (data[index]?.taxi || 0)) - (data[index]?.expense || 0)
     }));
-  }, [reservations, expenses]);
+  }, [reservations, expenses, taxiLogs]);
 
-  const totalRevenue = reservations.filter(r => r.status !== 'cancelled').reduce((sum, r) => sum + r.total, 0);
+  const totalRentRevenue = reservations.filter(r => r.status !== 'cancelled').reduce((sum, r) => sum + r.total, 0);
+  const totalTaxiRevenue = taxiLogs.reduce((sum, l) => sum + l.amount, 0);
+  const totalRevenue = totalRentRevenue + totalTaxiRevenue;
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const netProfit = totalRevenue - totalExpenses;
 
   // Transactions Logic
   const recentTransactions = useMemo(() => {
-    let incomes = reservations.map(r => ({
+    let rentalIncomes = reservations.map(r => ({
       id: r.id,
       date: r.dateCreated,
       description: `Reserva #${r.id} - ${r.customerName}`,
       amount: r.total,
       type: 'income',
       category: 'Rental'
+    }));
+
+    let taxiIncomes = taxiLogs.map(l => ({
+        id: l.id,
+        date: l.date,
+        description: `Taxi Settlement - Driver ${l.driverId}`,
+        amount: l.amount,
+        type: 'income',
+        category: 'Taxi'
     }));
 
     let outcomes = expenses.map(e => ({
@@ -84,7 +106,7 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
       category: e.category
     }));
 
-    let combined = [...incomes, ...outcomes];
+    let combined = [...rentalIncomes, ...taxiIncomes, ...outcomes];
 
     if (startDate) combined = combined.filter(t => new Date(t.date) >= new Date(startDate));
     if (endDate) combined = combined.filter(t => new Date(t.date) <= new Date(endDate));
@@ -92,23 +114,14 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
     if (filterCategory !== 'all') combined = combined.filter(t => t.category === filterCategory);
 
     return combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [reservations, expenses, startDate, endDate, filterType, filterCategory]);
+  }, [reservations, expenses, taxiLogs, startDate, endDate, filterType, filterCategory]);
 
   const totalPages = Math.ceil(recentTransactions.length / ITEMS_PER_PAGE);
   const currentTransactions = recentTransactions.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const handleAddSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    onAddExpense({
-      id: `EXP-${Date.now()}`,
-      description: formData.get('description') as string,
-      amount: Number(formData.get('amount')),
-      category: formData.get('category') as any,
-      date: formData.get('date') as string,
-    });
+  const handleAddExpenseSubmit = (expense: Expense) => {
+    onAddExpense(expense);
     notify('success', 'Expense record added');
-    (e.target as HTMLFormElement).reset();
   };
 
   return (
@@ -116,7 +129,10 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
         <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-2"><div className="p-2 bg-emerald-100 rounded-lg text-emerald-600"><TrendingUp size={20} /></div><p className="text-sm font-medium text-slate-500">{t.admin.fin_total_income}</p></div>
-                <p className="text-2xl font-bold text-slate-900">{totalRevenue.toLocaleString()} CVE</p>
+                <div className="flex flex-col">
+                    <p className="text-2xl font-bold text-slate-900">{totalRevenue.toLocaleString()} CVE</p>
+                    <p className="text-xs text-slate-400 mt-1 flex gap-2"><span>Rent: {totalRentRevenue.toLocaleString()}</span><span>|</span><span>Taxi: {totalTaxiRevenue.toLocaleString()}</span></p>
+                </div>
             </div>
             <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-2"><div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown size={20} /></div><p className="text-sm font-medium text-slate-500">{t.admin.fin_total_expenses}</p></div>
@@ -130,22 +146,30 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
 
         <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                <h3 className="mb-6 text-lg font-bold text-slate-900">Profit & Loss</h3>
-                <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%"><ComposedChart data={financialData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} /><YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} /><Tooltip formatter={(value) => [`${Number(value).toLocaleString()} CVE`, '']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} /><Legend /><Bar dataKey="income" name="Income" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} /><Bar dataKey="expense" name="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} /><Line type="monotone" dataKey="profit" name="Net Profit" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} /></ComposedChart></ResponsiveContainer>
+                <h3 className="mb-6 text-lg font-bold text-slate-900">Financial Overview</h3>
+                <div className="w-full h-80 min-h-[320px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={financialData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                            <Tooltip formatter={(value) => [`${Number(value).toLocaleString()} CVE`, '']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                            <Legend />
+                            <Bar dataKey="income" name="Rentals" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} barSize={20} />
+                            <Bar dataKey="taxi" name="Taxi" stackId="a" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Bar dataKey="expense" name="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Line type="monotone" dataKey="profit" name="Net Profit" stroke="#3b82f6" strokeWidth={3} dot={{r: 4}} />
+                        </ComposedChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
-            <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
-                <h3 className="mb-6 text-lg font-bold text-slate-900">{t.admin.fin_add_expense}</h3>
-                <form onSubmit={handleAddSubmit} className="space-y-4">
-                    <div><label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_desc}</label><input name="description" required className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" placeholder="e.g. Office Rent" /></div>
-                    <div><label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_amount}</label><input name="amount" type="number" required className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" placeholder="0" /></div>
-                    <div className="grid grid-cols-2 gap-2">
-                        <div><label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_category}</label><select name="category" className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border">{expenseCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select></div>
-                        <div><label className="block text-xs font-medium text-slate-700 mb-1">{t.admin.fin_date}</label><input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="w-full rounded-md border-slate-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm p-2 border" /></div>
-                    </div>
-                    <button type="submit" className="w-full rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white hover:bg-slate-800 mt-2">Add Expense</button>
-                </form>
+            
+            <div className="lg:col-span-1">
+                <ExpenseForm 
+                    t={t}
+                    expenseCategories={expenseCategories}
+                    onSubmit={handleAddExpenseSubmit}
+                />
             </div>
         </div>
 
@@ -157,7 +181,6 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
                     <span className="text-slate-400">-</span>
                     <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-md border-slate-200 text-xs py-1.5" />
                     <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-md border-slate-200 text-xs py-1.5"><option value="all">All Types</option><option value="income">Income</option><option value="expense">Expense</option></select>
-                    <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border-slate-200 text-xs py-1.5"><option value="all">All Categories</option><option value="Rental">Rental</option>{expenseCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select>
                     <button onClick={() => { setStartDate(''); setEndDate(''); setFilterType('all'); setFilterCategory('all'); }} className="p-1.5 text-slate-400 hover:text-red-600 rounded hover:bg-slate-50"><RefreshCcw size={14} /></button>
                 </div>
             </div>
@@ -167,7 +190,7 @@ export const AdminFinanceTab: React.FC<AdminFinanceTabProps> = ({
                     <tbody className="divide-y divide-slate-100">
                         {currentTransactions.map((item: any) => (
                             <tr key={item.id} className="hover:bg-slate-50">
-                                <td className="px-6 py-4 font-mono text-xs">{item.date}</td><td className="px-6 py-4">{item.description}</td><td className="px-6 py-4 capitalize"><span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">{item.category}</span></td>
+                                <td className="px-6 py-4 font-mono text-xs">{item.date}</td><td className="px-6 py-4">{item.description}</td><td className="px-6 py-4 capitalize"><span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${item.category === 'Taxi' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-800'}`}>{item.category}</span></td>
                                 <td className="px-6 py-4">{item.type === 'income' ? (<span className="text-emerald-600 flex items-center gap-1 font-medium"><TrendingUp size={14} /> {t.admin.fin_type_income}</span>) : (<span className="text-red-600 flex items-center gap-1 font-medium"><TrendingDown size={14} /> {t.admin.fin_type_expense}</span>)}</td>
                                 <td className={`px-6 py-4 text-right font-bold ${item.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>{item.type === 'income' ? '+' : '-'}{item.amount.toLocaleString()}</td>
                                 <td className="px-6 py-4 text-right">{item.type === 'expense' && (<button onClick={() => onDeleteExpense(item.id)} className="text-slate-400 hover:text-red-600 p-1"><Trash2 size={16} /></button>)}</td>

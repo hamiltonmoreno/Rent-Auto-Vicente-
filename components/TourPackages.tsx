@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Clock, Check, Map, Eye, X, MapPin, Calendar, Info } from 'lucide-react';
 import { Translation, Tour } from '../types';
@@ -31,10 +30,10 @@ export const TourPackages: React.FC<TourPackagesProps> = ({ t, tours, onBookTour
           </p>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {tours.map((tour) => (
             <div key={tour.id} className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
-              <div className="aspect-[16/10] w-full overflow-hidden bg-slate-200">
+              <div className="aspect-video w-full overflow-hidden bg-slate-200">
                 <img 
                   src={tour.image} 
                   alt={tour.title}
@@ -45,20 +44,20 @@ export const TourPackages: React.FC<TourPackagesProps> = ({ t, tours, onBookTour
                 </div>
               </div>
 
-              <div className="flex flex-1 flex-col p-6">
-                <h3 className="text-xl font-bold text-slate-900">{tour.title}</h3>
+              <div className="flex flex-1 flex-col p-5">
+                <h3 className="text-lg font-bold text-slate-900">{tour.title}</h3>
                 
-                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+                <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
                   <Clock size={16} />
                   <span>{t.tours.duration}: {tour.duration}</span>
                 </div>
 
-                <p className="mt-4 text-sm text-slate-600 flex-1 line-clamp-3">
+                <p className="mt-3 text-sm text-slate-600 flex-1 line-clamp-3">
                   {tour.description}
                 </p>
 
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     {t.tours.included}
                   </p>
                   <ul className="space-y-2">
@@ -78,7 +77,7 @@ export const TourPackages: React.FC<TourPackagesProps> = ({ t, tours, onBookTour
 
                 <button
                   onClick={() => setSelectedTour(tour)}
-                  className="mt-6 w-full rounded-lg border-2 border-slate-900 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-900 hover:text-white flex items-center justify-center gap-2"
+                  className="mt-4 w-full rounded-lg border-2 border-red-600 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white flex items-center justify-center gap-2"
                 >
                   <Eye size={18} />
                   {t.tours.view_details}
@@ -89,7 +88,7 @@ export const TourPackages: React.FC<TourPackagesProps> = ({ t, tours, onBookTour
         </div>
       </div>
 
-      {/* Tour Detail Modal */}
+      {/* Tour Detail Modal - Responsive */}
       {selectedTour && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-200">

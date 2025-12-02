@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Menu, X, Globe, User, LogOut, LogIn } from 'lucide-react';
 import { Language, Translation, User as UserType } from '../types';
@@ -97,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button 
                 onClick={onLoginClick}
-                className="flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+                className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 shadow-md"
               >
                 <LogIn size={16} />
                 {t.nav.login}
@@ -119,18 +117,18 @@ export const Header: React.FC<HeaderProps> = ({
       {isOpen && (
         <div className="border-t border-slate-200 bg-white px-4 py-6 md:hidden">
           <nav className="flex flex-col gap-4">
-            <button onClick={() => { onNavigate('home'); setIsOpen(false); }} className="text-left text-base font-medium text-slate-600">
+            <button onClick={() => { onNavigate('home'); setIsOpen(false); }} className="text-left text-base font-medium text-slate-600 hover:text-red-600">
               {t.nav.home}
             </button>
             
             {currentUser?.role === 'customer' && (
-              <button onClick={() => { onNavigate('customer'); setIsOpen(false); }} className="text-left text-base font-medium text-slate-600">
+              <button onClick={() => { onNavigate('customer'); setIsOpen(false); }} className="text-left text-base font-medium text-slate-600 hover:text-red-600">
                 {t.nav.my_reservations}
               </button>
             )}
             
             {currentUser?.role === 'admin' && (
-              <button onClick={() => { onNavigate('admin'); setIsOpen(false); }} className="text-left text-base font-medium text-slate-600">
+              <button onClick={() => { onNavigate('admin'); setIsOpen(false); }} className="text-left text-base font-medium text-slate-600 hover:text-red-600">
                 {t.nav.admin}
               </button>
             )}
@@ -145,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <LogOut size={16} /> {t.nav.logout}
                  </button>
               ) : (
-                <button onClick={() => { onLoginClick(); setIsOpen(false); }} className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                <button onClick={() => { onLoginClick(); setIsOpen(false); }} className="flex items-center gap-2 text-sm font-medium text-red-600">
                    <LogIn size={16} /> {t.nav.login}
                 </button>
               )}

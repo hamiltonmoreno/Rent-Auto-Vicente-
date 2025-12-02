@@ -22,16 +22,17 @@ export interface Vehicle {
   make: string;
   model: string;
   year: number;
-  category: string; // Changed from strict union to string to allow dynamic categories
+  category: string; 
   transmission: 'manual' | 'automatic';
   seats: number;
   pricePerDay: number;
   image: string;
-  available: boolean; // General availability (e.g. not in maintenance)
+  available: boolean; 
   status: 'available' | 'maintenance' | 'rented';
   rating: number;
   reviewCount: number;
   plate?: string;
+  usageType?: 'rental' | 'taxi' | 'both';
 }
 
 export interface ReservationExtras {
@@ -46,13 +47,13 @@ export type PaymentStatus = 'pending' | 'paid' | 'refunded' | 'failed';
 
 export interface Reservation {
   id: string;
-  vehicleId?: string; // Optional for tours
-  tourId?: string;    // New for tours
-  type?: 'vehicle' | 'tour'; // Distinguish types
+  vehicleId?: string; 
+  tourId?: string;    
+  type?: 'vehicle' | 'tour'; 
   userId: string;
   customerName: string;
   startDate: string;
-  endDate: string; // Same as startDate for single-day tours
+  endDate: string; 
   status: ReservationStatus;
   total: number;
   discount?: number;
@@ -73,7 +74,7 @@ export interface Review {
   id: string;
   vehicleId: string;
   customerName: string;
-  rating: number; // 1-5
+  rating: number; 
   comment: string;
   date: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -83,7 +84,7 @@ export interface Expense {
   id: string;
   description: string;
   amount: number;
-  category: string; // Changed from strict union to string
+  category: string; 
   date: string;
 }
 
@@ -96,6 +97,43 @@ export interface Tour {
   price: number;
   features: string[];
   capacity?: number;
+}
+
+// TAXI TYPES
+export type DriverStatus = 'available' | 'busy' | 'off_duty';
+export type RideStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface Driver {
+  id: string;
+  name: string;
+  phone: string;
+  license: string;
+  status: DriverStatus;
+  currentVehicleId?: string; 
+}
+
+export interface TaxiRide {
+  id: string;
+  passengerName: string;
+  passengerPhone?: string;
+  pickupAddress: string;
+  dropoffAddress: string;
+  driverId: string;
+  vehicleId: string; 
+  price: number;
+  status: RideStatus;
+  startTime: string; 
+  endTime?: string;
+  notes?: string;
+}
+
+export interface TaxiDailyLog {
+  id: string;
+  driverId: string;
+  amount: number;
+  date: string;
+  status: 'paid' | 'partial' | 'pending';
+  notes?: string;
 }
 
 export interface Translation {
@@ -237,6 +275,7 @@ export interface Translation {
     tabs_finance: string; 
     tabs_tours: string; 
     tabs_reports: string;
+    tabs_taxi: string; 
     filter_pending: string;
     filter_all: string;
     add_vehicle: string;
@@ -310,7 +349,11 @@ export interface Translation {
     rep_top_vehicles: string;
     rep_perf_days: string;
     rep_perf_revenue: string;
-    // Filters
+    rep_net_margin: string;
+    rep_revpar: string;
+    rep_maint_cost: string;
+    rep_pickup_dist: string;
+    rep_lead_time: string;
     rep_filter_date_start: string;
     rep_filter_date_end: string;
     rep_filter_vehicle: string;
@@ -318,7 +361,9 @@ export interface Translation {
     rep_filter_type: string;
     rep_filter_clear: string;
     rep_filter_apply: string;
-    // Enhanced Overview
+    rep_quick_7days: string;
+    rep_quick_month: string;
+    rep_quick_year: string;
     ov_today_pickups: string;
     ov_today_returns: string;
     ov_occupancy_rate: string;
@@ -327,8 +372,30 @@ export interface Translation {
     ov_revenue_trend: string;
     ov_growth_mom: string;
     ov_pending_actions: string;
-    // Smart Status
     fleet_status_cleaning: string;
+    search_placeholder_res: string;
+    search_placeholder_fleet: string;
+    filter_status_label: string;
+    taxi_settlement: string;
+    taxi_daily_total: string;
+    taxi_driver_status: string;
+    taxi_amount_paid: string;
+    taxi_register_payment: string;
+    taxi_paid: string;
+    taxi_unpaid: string;
+    taxi_history: string;
+    taxi_tab_operations: string;
+    taxi_tab_drivers: string;
+    taxi_tab_vehicles: string;
+    taxi_add_driver: string;
+    taxi_driver_name: string;
+    taxi_driver_license: string;
+    taxi_driver_phone: string;
+    taxi_assign_vehicle: string;
+    fleet_usage_type: string;
+    fleet_usage_rental: string;
+    fleet_usage_taxi: string;
+    fleet_usage_both: string;
   };
   customer: {
     dashboard: string;

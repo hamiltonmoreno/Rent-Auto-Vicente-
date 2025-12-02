@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { Translation, Reservation, Vehicle, ReservationStatus, Tour } from '../types';
 import { Pagination } from './Pagination';
+import { Search, Filter } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -11,6 +13,7 @@ interface AdminReservationsTabProps {
   vehicles: Vehicle[];
   tours: Tour[];
   onUpdateReservationStatus: (id: string, status: ReservationStatus) => void;
+  onUpdateReservation?: (res: Reservation) => void;
 }
 
 export const AdminReservationsTab: React.FC<AdminReservationsTabProps> = ({
@@ -18,11 +21,36 @@ export const AdminReservationsTab: React.FC<AdminReservationsTabProps> = ({
   reservations,
   vehicles,
   tours,
-  onUpdateReservationStatus
+  onUpdateReservationStatus,
+  onUpdateReservation
 }) => {
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(reservations.length / ITEMS_PER_PAGE);
-  const currentReservations = reservations.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState('');
+
+  const filteredReservations = useMemo(() => {
+    return reservations.filter(res => {
+      // 1. Text Search
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = 
+        res.customerName.toLowerCase().includes(term) || 
+        res.id.toLowerCase().includes(term);
+
+      if (!matchesSearch) return false;
+
+      // 2. Status Filter
+      if (statusFilter !== 'all' && res.status !== statusFilter) return false;
+
+      // 3. Date Filter (Check if start date matches)
+      if (dateFilter && res.startDate !== dateFilter) return false;
+
+      return true;
+    });
+  }, [reservations, searchTerm, statusFilter, dateFilter]);
+
+  const totalPages = Math.ceil(filteredReservations.length / ITEMS_PER_PAGE);
+  const currentReservations = filteredReservations.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const getVehicleName = (id?: string) => {
     const v = vehicles.find(v => v.id === id);
@@ -36,8 +64,44 @@ export const AdminReservationsTab: React.FC<AdminReservationsTabProps> = ({
 
   return (
     <div className="rounded-xl border border-slate-100 bg-white shadow-sm animate-in fade-in">
-      <div className="flex items-center justify-between border-b border-slate-100 p-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between border-b border-slate-100 p-6 gap-4">
         <h3 className="text-lg font-bold text-slate-900">{t.admin.tabs_reservations}</h3>
+        
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {/* Search Input */}
+            <div className="relative flex-1 sm:flex-initial">
+                <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+                <input 
+                    type="text" 
+                    placeholder={t.admin.search_placeholder_res} 
+                    value={searchTerm}
+                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                    className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-full sm:w-64 focus:border-slate-900 focus:ring-0"
+                />
+            </div>
+
+            {/* Status Filter */}
+            <select 
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:border-slate-900 focus:ring-0"
+            >
+                <option value="all">{t.filters.all}</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+
+            {/* Date Filter */}
+            <input 
+                type="date"
+                value={dateFilter}
+                onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+                className="py-2 px-3 border border-slate-200 rounded-lg text-sm focus:border-slate-900 focus:ring-0"
+            />
+        </div>
       </div>
       <div className="overflow-x-auto">
          <table className="w-full text-left text-sm text-slate-600">
@@ -54,7 +118,7 @@ export const AdminReservationsTab: React.FC<AdminReservationsTabProps> = ({
                </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-               {currentReservations.map(res => (
+               {currentReservations.length > 0 ? currentReservations.map(res => (
                   <tr key={res.id} className="hover:bg-slate-50">
                      <td className="px-6 py-4 font-mono text-xs">{res.id}</td>
                      <td className="px-6 py-4 font-medium text-slate-900">{res.customerName}</td>
@@ -94,7 +158,13 @@ export const AdminReservationsTab: React.FC<AdminReservationsTabProps> = ({
                         </div>
                      </td>
                   </tr>
-               ))}
+               )) : (
+                   <tr>
+                       <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
+                           No reservations found matching criteria.
+                       </td>
+                   </tr>
+               )}
             </tbody>
          </table>
       </div>

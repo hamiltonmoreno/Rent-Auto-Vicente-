@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { X, Calendar, Users, CheckCircle, Loader2, Download, Mail } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Calendar, Users, CheckCircle, Loader2, Download, Mail, Info } from 'lucide-react';
 import { Tour, Translation, User, PaymentMethod, Reservation } from '../types';
 import { useNotification } from './NotificationSystem';
 
@@ -38,6 +37,21 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
 
   const totalPrice = tour.price * guests;
 
+  // Real-time Capacity Calculation
+  const remainingSpots = useMemo(() => {
+    if (!date || !tour.capacity) return null;
+    
+    const existingBookings = reservations.filter(r => 
+        r.type === 'tour' && 
+        r.tourId === tour.id && 
+        r.startDate === date && 
+        r.status !== 'cancelled'
+    );
+
+    const totalPax = existingBookings.reduce((sum, r) => sum + (r.numberOfPassengers || 0), 0);
+    return Math.max(0, tour.capacity - totalPax);
+  }, [date, tour.id, tour.capacity, reservations]);
+
   const handleNext = () => {
     if (step === 1) {
         if (!date) {
@@ -46,21 +60,9 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
         }
 
         // CAPACITY CHECK LOGIC
-        if (tour.capacity) {
-            const existingBookings = reservations.filter(r => 
-                r.type === 'tour' && 
-                r.tourId === tour.id && 
-                r.startDate === date && 
-                r.status !== 'cancelled'
-            );
-
-            const totalPax = existingBookings.reduce((sum, r) => sum + (r.numberOfPassengers || 0), 0);
-            const remainingSpots = tour.capacity - totalPax;
-
-            if (guests > remainingSpots) {
-                notify('error', `Overbooking: Only ${remainingSpots > 0 ? remainingSpots : 0} spots available for this date.`);
-                return;
-            }
+        if (remainingSpots !== null && guests > remainingSpots) {
+            notify('error', `Overbooking: Only ${remainingSpots} spots available for this date.`);
+            return;
         }
     }
     setStep(prev => (prev + 1) as any);
@@ -163,6 +165,15 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
                                 ))}
                             </select>
                         </div>
+                        {remainingSpots !== null && (
+                            <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${remainingSpots === 0 ? 'text-red-600' : remainingSpots < 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                <Info size={14} />
+                                {remainingSpots === 0 
+                                    ? 'Sold out for this date' 
+                                    : `${remainingSpots} spots remaining`
+                                }
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-between items-center pt-4 border-t border-slate-100">
@@ -172,9 +183,10 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
 
                     <button 
                         onClick={handleNext}
-                        className="w-full rounded-lg bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-800 transition-colors"
+                        disabled={remainingSpots === 0}
+                        className="w-full rounded-lg bg-red-600 py-3 text-sm font-bold text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Next: Payment
+                        {remainingSpots === 0 ? 'Sold Out' : 'Next: Payment'}
                     </button>
                 </div>
             )}
@@ -257,7 +269,7 @@ export const TourBookingModal: React.FC<TourBookingModalProps> = ({
                     <button 
                         onClick={handlePayment}
                         disabled={isProcessing}
-                        className="w-full rounded-lg bg-red-600 py-3 text-sm font-bold text-white hover:bg-red-500 transition-colors flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="w-full rounded-lg bg-red-600 py-3 text-sm font-bold text-white hover:bg-red-700 transition-colors flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {isProcessing ? <Loader2 className="animate-spin" size={18} /> : t.tour_booking.confirm_purchase}
                     </button>

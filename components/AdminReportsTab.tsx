@@ -1,6 +1,7 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { PieChart as PieChartIcon, DollarSign, Clock, Activity, Download, FileText, Filter, RefreshCcw } from 'lucide-react';
+import { PieChart as PieChartIcon, DollarSign, Clock, Activity, Download, FileText, Filter, RefreshCcw, TrendingUp, MapPin } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Legend, Line, BarChart, Bar } from 'recharts';
 import { Translation, Reservation, Vehicle, Expense, CategoryItem } from '../types';
 import { useNotification } from './NotificationSystem';
@@ -56,8 +57,21 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
      const rentedOrActiveCount = vehicles.filter(v => v.status === 'rented' || v.status === 'maintenance').length; 
      const occupancyRate = vehicles.length > 0 ? (rentedOrActiveCount / vehicles.length) * 100 : 0;
      const validReservations = filteredReservations.filter(r => r.status !== 'cancelled' && r.status !== 'pending' && r.type === 'vehicle');
+     
      const revenueSum = validReservations.reduce((sum, r) => sum + r.total, 0);
+     const expensesSum = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+     const maintenanceSum = filteredExpenses.filter(e => e.category === 'maintenance' || e.category === 'oficina').reduce((sum, e) => sum + e.amount, 0);
+     
+     const netProfit = revenueSum - expensesSum;
+     const netMargin = revenueSum > 0 ? (netProfit / revenueSum) * 100 : 0;
+     
+     // RevPAR Calculation: Total Revenue / (Total Vehicles)
+     // In a real scenario, this is divided by (Vehicles * Days in Period)
+     // For this MVP, we simplify to Revenue / Fleet Size
+     const revPAR = vehicles.length > 0 ? revenueSum / vehicles.length : 0;
+
      const avgTicket = validReservations.length > 0 ? revenueSum / validReservations.length : 0;
+     
      const totalDurationDays = validReservations.reduce((sum, res) => {
         const start = new Date(res.startDate);
         const end = new Date(res.endDate);
@@ -65,6 +79,15 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
         return sum + (Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1);
      }, 0);
      const avgDuration = validReservations.length > 0 ? totalDurationDays / validReservations.length : 0;
+
+     // Lead Time Calculation
+     const totalLeadTime = validReservations.reduce((sum, res) => {
+         const created = new Date(res.dateCreated);
+         const start = new Date(res.startDate);
+         const diffTime = Math.max(0, start.getTime() - created.getTime());
+         return sum + (Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 0);
+     }, 0);
+     const avgLeadTime = validReservations.length > 0 ? totalLeadTime / validReservations.length : 0;
 
      const revByCategory: Record<string, number> = {};
      validReservations.forEach(res => {
@@ -81,6 +104,14 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
      filteredReservations.forEach(r => statusCounts[r.status] = (statusCounts[r.status] || 0) + 1);
      const statusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
+     // Pickup Location Distribution
+     const locationCounts: Record<string, number> = {};
+     filteredReservations.forEach(r => {
+         const loc = r.pickupLocation || r.pickupType || 'unknown';
+         locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+     });
+     const locationData = Object.entries(locationCounts).map(([name, value]) => ({ name, value }));
+
      const vehiclePerformance = vehicles.map(v => {
         const vehicleRes = filteredReservations.filter(r => r.vehicleId === v.id && r.status !== 'cancelled' && r.status !== 'pending');
         const revenue = vehicleRes.reduce((sum, r) => sum + r.total, 0);
@@ -92,8 +123,21 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
          return { ...v, revenue, daysRented };
      }).sort((a,b) => b.revenue - a.revenue);
 
-     return { occupancyRate, avgTicket, avgDuration, totalDurationDays, pieData, statusData, vehiclePerformance };
-  }, [filteredReservations, vehicles]);
+     return { 
+         occupancyRate, 
+         avgTicket, 
+         avgDuration, 
+         totalDurationDays, 
+         pieData, 
+         statusData, 
+         vehiclePerformance,
+         netMargin,
+         revPAR,
+         maintenanceSum,
+         locationData,
+         avgLeadTime
+     };
+  }, [filteredReservations, vehicles, filteredExpenses]);
 
   const financialData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -125,11 +169,13 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
     }));
   }, [filteredReservations, filteredExpenses]);
 
-  const handleQuickFilter = (type: 'week' | 'month') => {
+  const handleQuickFilter = (type: 'week' | 'month' | 'year') => {
       const end = new Date();
       const start = new Date();
       if (type === 'week') start.setDate(end.getDate() - 7);
-      else start.setDate(1); 
+      else if (type === 'month') start.setDate(1); 
+      else if (type === 'year') start.setMonth(0, 1);
+      
       setFilterStartDate(start.toISOString().split('T')[0]);
       setFilterEndDate(end.toISOString().split('T')[0]);
   };
@@ -140,14 +186,65 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in">
-        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-wrap gap-4 items-end">
-            <div><label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_date_start}</label><input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="rounded-lg border-slate-200 text-sm py-2" /></div>
-            <div><label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_date_end}</label><input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="rounded-lg border-slate-200 text-sm py-2" /></div>
-            <div><label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_vehicle}</label><select value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)} className="rounded-lg border-slate-200 text-sm py-2 w-32"><option value="all">All</option>{vehicles.map(v => (<option key={v.id} value={v.id}>{v.model}</option>))}</select></div>
-            <div className="flex gap-2 pb-1"><button onClick={() => handleQuickFilter('week')} className="px-3 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100">{t.admin.rep_quick_7days}</button><button onClick={() => handleQuickFilter('month')} className="px-3 py-1.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100">{t.admin.rep_quick_month}</button></div>
-            <button onClick={handleClearFilters} className="text-sm text-slate-500 hover:text-red-600 pb-2">{t.admin.rep_filter_clear}</button>
+        {/* Filters */}
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                    <Filter size={18} /> Filters
+                </h3>
+                <button onClick={handleClearFilters} className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1">
+                    <RefreshCcw size={12} /> {t.admin.rep_filter_clear}
+                </button>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_date_start}</label>
+                    <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm py-2" />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_date_end}</label>
+                    <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm py-2" />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_vehicle}</label>
+                    <select value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm py-2">
+                        <option value="all">{t.filters.all}</option>
+                        {vehicles.map(v => (<option key={v.id} value={v.id}>{v.model}</option>))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_category}</label>
+                    <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm py-2">
+                        <option value="all">{t.filters.all}</option>
+                        {vehicleCategories.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t.admin.rep_filter_type}</label>
+                    <select value={filterTransactionType} onChange={(e) => setFilterTransactionType(e.target.value)} className="w-full rounded-lg border-slate-200 text-sm py-2">
+                        <option value="all">{t.filters.all}</option>
+                        <option value="income">{t.admin.fin_type_income}</option>
+                        <option value="expense">{t.admin.fin_type_expense}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="flex gap-2 mt-4 pt-4 border-t border-slate-50">
+                <span className="text-xs font-medium text-slate-400 self-center mr-2">Quick Select:</span>
+                <button onClick={() => handleQuickFilter('week')} className="px-3 py-1 text-xs font-medium bg-slate-50 border border-slate-200 rounded-full hover:bg-slate-100 transition-colors">
+                    {t.admin.rep_quick_7days}
+                </button>
+                <button onClick={() => handleQuickFilter('month')} className="px-3 py-1 text-xs font-medium bg-slate-50 border border-slate-200 rounded-full hover:bg-slate-100 transition-colors">
+                    {t.admin.rep_quick_month}
+                </button>
+                <button onClick={() => handleQuickFilter('year')} className="px-3 py-1 text-xs font-medium bg-slate-50 border border-slate-200 rounded-full hover:bg-slate-100 transition-colors">
+                    {t.admin.rep_quick_year}
+                </button>
+            </div>
         </div>
         
+        {/* Key Operational Metrics */}
         <div className="grid gap-4 md:grid-cols-4">
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><p className="text-xs font-bold uppercase text-slate-400">{t.admin.rep_occupancy}</p><p className="text-xl font-bold text-slate-900">{reportData.occupancyRate.toFixed(1)}%</p></div>
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><p className="text-xs font-bold uppercase text-slate-400">{t.admin.rep_avg_ticket}</p><p className="text-xl font-bold text-slate-900">{reportData.avgTicket.toLocaleString('pt-CV', { maximumFractionDigits: 0 })} CVE</p></div>
@@ -155,11 +252,54 @@ export const AdminReportsTab: React.FC<AdminReportsTabProps> = ({
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm"><p className="text-xs font-bold uppercase text-slate-400">{t.admin.rep_days_rented}</p><p className="text-xl font-bold text-slate-900">{reportData.totalDurationDays}</p></div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><div className="flex justify-between mb-4"><h3 className="font-bold text-slate-900">{t.admin.rep_monthly_growth}</h3><button onClick={() => notify('success', 'PDF')} className="text-xs text-red-600"><Download size={14}/></button></div><div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={financialData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} /><Tooltip /><Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} /><Line type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={2} /></LineChart></ResponsiveContainer></div></div>
-            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><h3 className="font-bold text-slate-900 mb-4">{t.admin.rep_rev_by_cat}</h3><div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={reportData.pieData} dataKey="value" cx="50%" cy="50%" outerRadius={80} label>{reportData.pieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer></div></div>
+        {/* Financial & Advanced Metrics */}
+        <div className="grid gap-4 md:grid-cols-4">
+            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm border-l-4 border-l-emerald-500">
+                <p className="text-xs font-bold uppercase text-emerald-600">{t.admin.rep_net_margin}</p>
+                <p className="text-xl font-bold text-slate-900">{reportData.netMargin.toFixed(1)}%</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm border-l-4 border-l-blue-500">
+                <p className="text-xs font-bold uppercase text-blue-600">{t.admin.rep_revpar}</p>
+                <p className="text-xl font-bold text-slate-900">{reportData.revPAR.toLocaleString('pt-CV', { maximumFractionDigits: 0 })}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm border-l-4 border-l-red-500">
+                <p className="text-xs font-bold uppercase text-red-600">{t.admin.rep_maint_cost}</p>
+                <p className="text-xl font-bold text-slate-900">{reportData.maintenanceSum.toLocaleString('pt-CV')} CVE</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm border-l-4 border-l-purple-500">
+                <p className="text-xs font-bold uppercase text-purple-600">{t.admin.rep_lead_time}</p>
+                <p className="text-xl font-bold text-slate-900">{reportData.avgLeadTime.toFixed(1)} Days</p>
+            </div>
         </div>
 
+        {/* Charts Row 1 */}
+        <div className="grid gap-6 lg:grid-cols-2">
+            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                <div className="flex justify-between mb-4">
+                    <h3 className="font-bold text-slate-900">{t.admin.rep_monthly_growth}</h3>
+                    <button onClick={() => notify('success', 'PDF exported')} className="text-xs text-red-600 flex items-center gap-1 hover:underline"><Download size={14}/> {t.admin.rep_export_pdf}</button>
+                </div>
+                <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={financialData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} /><Tooltip /><Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} /><Line type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={2} /></LineChart></ResponsiveContainer></div>
+            </div>
+            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                <h3 className="font-bold text-slate-900 mb-4">{t.admin.rep_rev_by_cat}</h3>
+                <div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={reportData.pieData} dataKey="value" cx="50%" cy="50%" outerRadius={80} label>{reportData.pieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer></div>
+            </div>
+        </div>
+
+        {/* Charts Row 2 */}
+        <div className="grid gap-6 lg:grid-cols-2">
+            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                <h3 className="font-bold text-slate-900 mb-4">{t.admin.rep_pickup_dist}</h3>
+                <div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={reportData.locationData} layout="vertical"><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" hide /><YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12}} /><Tooltip /><Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} /></BarChart></ResponsiveContainer></div>
+            </div>
+            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                <h3 className="font-bold text-slate-900 mb-4">{t.admin.rep_status_dist}</h3>
+                <div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={reportData.statusData} dataKey="value" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} label>{reportData.statusData.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer></div>
+            </div>
+        </div>
+
+        {/* Fleet Performance Table */}
         <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden"><div className="p-4 border-b border-slate-100"><h3 className="font-bold text-slate-900">{t.admin.rep_vehicle_perf}</h3></div><table className="w-full text-left text-sm text-slate-600"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-6 py-4">Vehicle</th><th className="px-6 py-4 text-right">{t.admin.rep_perf_revenue}</th><th className="px-6 py-4 text-center">{t.admin.rep_perf_days}</th><th className="px-6 py-4 text-center">ROI Index</th></tr></thead><tbody className="divide-y divide-slate-100">{reportData.vehiclePerformance.map(v => (<tr key={v.id}><td className="px-6 py-4 font-bold">{v.make} {v.model}</td><td className="px-6 py-4 text-right font-mono text-emerald-600">{v.revenue.toLocaleString()} CVE</td><td className="px-6 py-4 text-center">{v.daysRented}</td><td className="px-6 py-4 text-center"><div className="w-full bg-slate-100 rounded-full h-1.5 max-w-[100px] mx-auto overflow-hidden"><div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${Math.min((v.revenue / 100000) * 100, 100)}%` }}></div></div></td></tr>))}</tbody></table></div>
     </div>
   );
