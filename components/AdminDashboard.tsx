@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   LayoutDashboard, 
@@ -59,7 +60,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   vehicles, 
   reviews, 
   expenses, 
-  tours,
+  tours, 
   drivers,
   taxiLogs,
   vehicleCategories,
@@ -86,11 +87,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   
   const pendingReviewsCount = reviews.filter(r => r.status === 'pending').length;
 
-  // FIX: Use usageType for segmentation logic
-  // Overview gets rental fleet only to calculate rental stats accurately
+  // Rental Fleet: Used only for Overview stats calculations
   const rentalFleet = useMemo(() => vehicles.filter(v => v.usageType === 'rental' || v.usageType === 'both' || !v.usageType), [vehicles]);
   
-  // Taxi Fleet: Used for Driver Assignment dropdowns
+  // Taxi Fleet: Used for Taxi Tab driver assignments
   const taxiFleet = useMemo(() => vehicles.filter(v => v.usageType === 'taxi' || v.usageType === 'both'), [vehicles]);
 
   const getRealTimeVehicleStatus = (vehicle: Vehicle) => {
@@ -157,7 +157,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <main className="flex-1 min-w-0">
             {activeTab === 'overview' && <AdminOverviewTab t={t} reservations={reservations} vehicles={rentalFleet} reviews={reviews} getRealTimeVehicleStatus={getRealTimeVehicleStatus} onNavigateToReservations={() => setActiveTab('reservations')} />}
             
-            {/* FIX: Pass ALL vehicles to Fleet Tab so the internal "Taxi/Both" filters work */}
             {activeTab === 'fleet' && <AdminFleetTab t={t} vehicles={vehicles} vehicleCategories={vehicleCategories} getRealTimeVehicleStatus={getRealTimeVehicleStatus} onAddVehicle={onAddVehicle} onUpdateVehicle={onUpdateVehicle} onDeleteVehicle={onDeleteVehicle} />}
             
             {activeTab === 'reservations' && <AdminReservationsTab t={t} reservations={reservations} vehicles={vehicles} tours={tours} onUpdateReservationStatus={onUpdateReservationStatus} onUpdateReservation={onUpdateReservation} />}
@@ -174,7 +173,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             
             {activeTab === 'settings' && <AdminSettingsTab t={t} vehicleCategories={vehicleCategories} expenseCategories={expenseCategories} onAddCategory={onAddCategory} onDeleteCategory={onDeleteCategory} />}
             
-            {activeTab === 'taxi' && <AdminTaxiTab t={t} vehicles={taxiFleet} drivers={drivers} taxiLogs={taxiLogs} onAddDriver={onAddDriver} onUpdateDriver={onUpdateDriver} onDeleteDriver={onDeleteDriver} onAddVehicle={onAddVehicle} onUpdateVehicle={onUpdateVehicle} onDeleteVehicle={onDeleteVehicle} onAddTaxiLog={onAddTaxiLog} />}
+            {/* Pass vehicleCategories to Taxi Tab for the VehicleForm */}
+            {activeTab === 'taxi' && <AdminTaxiTab t={t} vehicles={taxiFleet} drivers={drivers} taxiLogs={taxiLogs} vehicleCategories={vehicleCategories} onAddDriver={onAddDriver} onUpdateDriver={onUpdateDriver} onDeleteDriver={onDeleteDriver} onAddVehicle={onAddVehicle} onUpdateVehicle={onUpdateVehicle} onDeleteVehicle={onDeleteVehicle} onAddTaxiLog={onAddTaxiLog} />}
           </main>
         </div>
       </div>

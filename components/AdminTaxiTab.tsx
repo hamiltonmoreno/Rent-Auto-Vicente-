@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Translation, Driver, Vehicle, TaxiDailyLog } from '../types';
+import { Translation, Driver, Vehicle, TaxiDailyLog, CategoryItem } from '../types';
 import { User, DollarSign, Car, Users } from 'lucide-react';
 import { AdminTaxiOperations } from './AdminTaxiOperations';
 import { AdminTaxiDrivers } from './AdminTaxiDrivers';
@@ -9,14 +10,15 @@ interface AdminTaxiTabProps {
   t: Translation;
   vehicles: Vehicle[];
   drivers: Driver[];
-  taxiLogs: TaxiDailyLog[]; // Global State
+  taxiLogs: TaxiDailyLog[];
+  vehicleCategories: CategoryItem[]; // Added prop
   onAddDriver: (driver: Driver) => void;
   onUpdateDriver: (driver: Driver) => void;
   onDeleteDriver: (id: string) => void;
   onAddVehicle: (vehicle: Vehicle) => void;
   onUpdateVehicle: (vehicle: Vehicle) => void;
   onDeleteVehicle: (id: string) => void;
-  onAddTaxiLog: (log: TaxiDailyLog) => void; // Global Handler
+  onAddTaxiLog: (log: TaxiDailyLog) => void;
 }
 
 export const AdminTaxiTab: React.FC<AdminTaxiTabProps> = ({ 
@@ -24,6 +26,7 @@ export const AdminTaxiTab: React.FC<AdminTaxiTabProps> = ({
   vehicles, 
   drivers, 
   taxiLogs,
+  vehicleCategories,
   onAddDriver, 
   onUpdateDriver, 
   onDeleteDriver,
@@ -59,10 +62,12 @@ export const AdminTaxiTab: React.FC<AdminTaxiTabProps> = ({
             <AdminTaxiVehicles 
                 t={t} 
                 vehicles={vehicles} 
-                drivers={drivers} 
+                drivers={drivers}
+                vehicleCategories={vehicleCategories} // Pass categories
                 onAddVehicle={onAddVehicle} 
                 onUpdateVehicle={onUpdateVehicle} 
                 onDeleteVehicle={onDeleteVehicle} 
+                onUpdateDriver={onUpdateDriver} // Needed for unassign
             />
         )}
     </div>
